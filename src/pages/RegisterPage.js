@@ -1,6 +1,59 @@
 import React from "react";
+import { register } from "../services/AuthService";
 
 export default function RegisterPage() {
+
+  const [email, setEmail] = React.useState("");
+  const [password, setPassword] = React.useState("");
+  const [firstName, setFirstName] = React.useState("");
+  const [lastName, setLastName] = React.useState("");
+  const [keycode, setKeycode] = React.useState("");
+  const [confirmPassword, setConfirmPassword] = React.useState("");
+  const [error, setError] = React.useState("");
+  const [success, setSuccess] = React.useState("");
+
+  const validateForm = () => {
+    if (!email || !password || !firstName || !lastName || !keycode || !confirmPassword) {
+      setError("Please fill in all fields.");
+      return false;
+    }
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return false;
+    }
+
+    if (!email.includes("@")) {
+      setError("Please enter a valid email address.");
+      return false;
+    }
+
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters long.");
+      return false;
+    }
+
+    return true;
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    setSuccess("");
+    setError("");
+    if (!validateForm()) {
+      return;
+    }
+
+    const res = await register(firstName, lastName, email, password, keycode);
+    if (!res.success) {
+      setError(res.message || "Registration failed. Please try again.");
+    } else {
+      setSuccess("Registration successful! You can now log in.");
+      setError("");
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-surface px-4">
       <div className="w-full max-w-5xl bg-white shadow-card rounded-2xl overflow-hidden grid grid-cols-1 md:grid-cols-2">
@@ -43,13 +96,27 @@ export default function RegisterPage() {
           <form className="space-y-5">
 
             {/* Full Name */}
-            <div>
-              <label className="text-sm text-secondary-light">Full Name</label>
-              <input
-                type="text"
-                placeholder="John Doe"
-                className="w-full mt-1 px-4 py-3 rounded-xl border border-border focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
-              />
+            <div className="flex gap-4">
+              <div>
+                <label className="text-sm text-secondary-light">First Name</label>
+                <input
+                  type="text"
+                  placeholder="John Doe"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className="w-full mt-1 px-4 py-3 rounded-xl border border-border focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
+                />
+              </div>
+               <div>
+                <label className="text-sm text-secondary-light">Last Name</label>
+                <input
+                  type="text"
+                  placeholder="John Doe"
+                  value={lastName}
+                  onChange= {(e) => setLastName(e.target.value)}
+                  className="w-full mt-1 px-4 py-3 rounded-xl border border-border focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
+                />
+              </div>
             </div>
 
             {/* Email */}
@@ -58,6 +125,8 @@ export default function RegisterPage() {
               <input
                 type="email"
                 placeholder="admin@drivelux.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="w-full mt-1 px-4 py-3 rounded-xl border border-border focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
               />
             </div>
@@ -68,6 +137,8 @@ export default function RegisterPage() {
               <input
                 type="password"
                 placeholder="••••••••"
+                value={keycode}
+                onChange={(e) => setKeycode(e.target.value)}
                 className="w-full mt-1 px-4 py-3 rounded-xl border border-border focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
               />
             </div>
@@ -78,6 +149,8 @@ export default function RegisterPage() {
               <input
                 type="password"
                 placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 className="w-full mt-1 px-4 py-3 rounded-xl border border-border focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
               />
             </div>
@@ -90,21 +163,30 @@ export default function RegisterPage() {
               <input
                 type="password"
                 placeholder="••••••••"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
                 className="w-full mt-1 px-4 py-3 rounded-xl border border-border focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
               />
             </div>
 
-            {/* Terms */}
-            <div className="flex items-start gap-2 text-sm text-muted">
-              <input type="checkbox" className="mt-1 accent-primary" />
-              <span>
-                I agree to the admin terms and conditions of DriveLux system
-              </span>
-            </div>
+            {/* Error Message */}
+            {error && (
+              <div className="w-full p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm">
+                {error}
+              </div>
+            )}
+
+            {/* Success Message */}
+            {success && (
+              <div className="w-full p-3 rounded-xl bg-green-50 border border-green-200 text-green-600 text-sm">
+                {success}
+              </div>
+            )}
 
             {/* Button */}
             <button
               type="submit"
+              onClick={handleSubmit}
               className="w-full py-3 rounded-xl bg-cta-gradient text-white font-semibold shadow-glow hover:opacity-90 transition"
             >
               Create Account
