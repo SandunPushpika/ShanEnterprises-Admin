@@ -7,6 +7,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const auth = useAuth();
   const navigate = useNavigate();
@@ -18,8 +19,9 @@ export default function LoginPage() {
       setError("Please enter both email and password.");
       return;
     }
-
+    setIsLoading(true);
     const result = await auth.loginUser(email, password);
+    setIsLoading(false);
     if (!result.success) {
       setError(result.message || "Login failed. Please try again.");
     }else{
@@ -112,9 +114,10 @@ export default function LoginPage() {
             <button
               type="submit"
               onClick={handleSubmit}
-              className="w-full py-3 rounded-xl bg-cta-gradient text-white font-semibold shadow-glow hover:opacity-90 transition"
+              disabled={isLoading}
+              className={`w-full py-3 rounded-xl bg-cta-gradient text-white font-semibold shadow-glow hover:opacity-90 transition ${isLoading ? "cursor-not-allowed opacity-90" : ""}`}
             >
-              Sign In
+              {isLoading ? "Logging in..." : "Login"}
             </button>
           </form>
 
