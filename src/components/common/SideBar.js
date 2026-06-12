@@ -15,7 +15,7 @@ const navItems = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/" },
     { icon: CarFront, label: "Vehicles", path: "/vehicles" },
     { icon: CalendarCheck, label: "Bookings", path: "/bookings" },
-    { icon: ClipboardCheck, label: "Driver Requests", path: "/drivers" },
+    { icon: ClipboardCheck, label: "Drivers", path: "/drivers" },
     { icon: Users, label: "Customers", path: "/customers" },
 ];
 
