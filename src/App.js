@@ -20,7 +20,7 @@ function App() {
         <Routes>
           <Route path="register" element={<RegisterPage />} />
           <Route path="login" element={<LoginPage />} />
-          {/* <Route path="/" element={<ProtectedRoute />}> */}
+          <Route path="/" element={<ProtectedRoute />}>
           <Route element={<DashboardLayout />}>
             <Route index element={<Main />} />
             <Route path="drivers" element={<DriverPage />} />
@@ -29,7 +29,7 @@ function App() {
             <Route path="bookings" element={<BookingPage />} />
             <Route path="/drivers" element={<DriversPage />} />
           </Route>
-          {/* </Route> */}
+          </Route>
         </Routes>
       </Router>
     </AuthProvider>
