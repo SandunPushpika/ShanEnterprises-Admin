@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { X, Search, Check, CarFront, Fuel, Users, Zap } from "lucide-react";
+import { X, Search, Check, CarFront, Fuel, Users, Zap, CalendarOff } from "lucide-react";
 
 const STATUS_STYLE = {
     Available: "bg-emerald-100 text-emerald-700 border-emerald-200",
@@ -10,15 +10,18 @@ const STATUS_STYLE = {
 const brandLabel = (id = "") =>
     id.replace(/^brand_/, "").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
-function PickerCard({ vehicle, isSelected, onSelect }) {
+function PickerCard({ vehicle, isSelected, onSelect, unavailable }) {
     return (
         <button
             type="button"
-            onClick={() => onSelect(vehicle)}
+            onClick={() => !unavailable && onSelect(vehicle)}
+            disabled={unavailable}
             className={`group relative w-full text-left rounded-2xl border-2 overflow-hidden transition-all duration-200 focus:outline-none
-                ${isSelected
-                    ? "border-primary shadow-glow scale-[1.01]"
-                    : "border-border hover:border-primary/40 hover:shadow-soft"
+                ${unavailable
+                    ? "border-border opacity-50 cursor-not-allowed"
+                    : isSelected
+                        ? "border-primary shadow-glow scale-[1.01]"
+                        : "border-border hover:border-primary/40 hover:shadow-soft"
                 }`}
         >
             <div className="relative h-36 bg-slate-100 overflow-hidden">
@@ -34,11 +37,18 @@ function PickerCard({ vehicle, isSelected, onSelect }) {
                     </div>
                 )}
 
+                {unavailable && (
+                    <div className="absolute inset-0 bg-slate-900/60 flex flex-col items-center justify-center gap-1">
+                        <CalendarOff className="w-7 h-7 text-white" />
+                        <span className="text-white text-[10px] font-bold uppercase tracking-wide">Booked</span>
+                    </div>
+                )}
+
                 <span className={`absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-full border ${STATUS_STYLE[vehicle.status] ?? "bg-slate-100 text-slate-600 border-slate-200"}`}>
                     {vehicle.status}
                 </span>
 
-                {isSelected && (
+                {isSelected && !unavailable && (
                     <div className="absolute top-2 left-2 w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow">
                         <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />
                     </div>
@@ -51,7 +61,7 @@ function PickerCard({ vehicle, isSelected, onSelect }) {
                 </p>
                 <p className="font-bold text-secondary text-sm leading-tight truncate">{vehicle.model}</p>
 
-                {/* Specs row */}
+
                 <div className="flex items-center gap-3 text-[11px] text-muted pt-0.5">
                     <span className="flex items-center gap-1">
                         <Users className="w-3 h-3" /> {vehicle.seatCapacity}
@@ -73,9 +83,45 @@ function PickerCard({ vehicle, isSelected, onSelect }) {
     );
 }
 
-/* ── Main modal ──────────────────────────────────────────────────── */
-export default function VehiclePickerModal({ vehicles = [], selectedName, onSelect, onClose }) {
+export default function VehiclePickerModal({
+    vehicles = [],
+    selectedName,
+    pickupDatetime,
+    returnDatetime,
+    currentBookingId,
+    onSelect,
+    onClose,
+}) {
     const [query, setQuery] = useState("");
+
+    const bookedVehicleNames = useMemo(() => {
+        if (!pickupDatetime || !returnDatetime) return new Set();
+        const newStart = new Date(pickupDatetime);
+        const newEnd = new Date(returnDatetime);
+        if (isNaN(newStart) || isNaN(newEnd) || newEnd <= newStart) return new Set();
+
+        let existingBookings = [];
+        try {
+            const saved = localStorage.getItem("shan_bookings_v1");
+            existingBookings = saved ? JSON.parse(saved) : [];
+        } catch { existingBookings = []; }
+
+        const booked = new Set();
+        existingBookings.forEach((b) => {
+            if (b.booking_status === "CANCELLED") return;
+            if (currentBookingId && b.id === currentBookingId) return;
+            if (!b.vehicle_name || !b.pickup_datetime || !b.return_datetime) return;
+
+            const bStart = new Date(b.pickup_datetime);
+            const bEnd = new Date(b.return_datetime);
+            if (newStart < bEnd && newEnd > bStart) {
+                booked.add(b.vehicle_name);
+            }
+        });
+        return booked;
+    }, [pickupDatetime, returnDatetime, currentBookingId]);
+
+    const datesSelected = !!(pickupDatetime && returnDatetime);
 
     const filtered = useMemo(() => {
         const q = query.toLowerCase().trim();
@@ -85,6 +131,8 @@ export default function VehiclePickerModal({ vehicles = [], selectedName, onSele
                 .some((f) => f?.toLowerCase().includes(q))
         );
     }, [vehicles, query]);
+
+    const availableCount = filtered.filter((v) => !bookedVehicleNames.has(v.model)).length;
 
     const handleSelect = (vehicle) => {
         onSelect(vehicle);
@@ -104,7 +152,12 @@ export default function VehiclePickerModal({ vehicles = [], selectedName, onSele
                     <div>
                         <h3 className="text-xl font-bold text-secondary">Select a Vehicle</h3>
                         <p className="text-xs text-muted mt-0.5">
-                            {vehicles.length} vehicle{vehicles.length !== 1 ? "s" : ""} in fleet — click one to assign it to this booking
+                            {datesSelected
+                                ? <>
+                                    <span className="text-emerald-600 font-semibold">{availableCount} available</span>
+                                    {" "}&amp; {filtered.length - availableCount} booked for the selected period
+                                </>
+                                : <>{vehicles.length} vehicle{vehicles.length !== 1 ? "s" : ""} in fleet — select dates first to see availability</>}
                         </p>
                     </div>
                     <button
@@ -140,6 +193,7 @@ export default function VehiclePickerModal({ vehicles = [], selectedName, onSele
                                     vehicle={v}
                                     isSelected={selectedName === v.model}
                                     onSelect={handleSelect}
+                                    unavailable={bookedVehicleNames.has(v.model)}
                                 />
                             ))}
                         </div>
@@ -154,7 +208,9 @@ export default function VehiclePickerModal({ vehicles = [], selectedName, onSele
 
                 <div className="px-6 py-4 border-t border-border flex items-center justify-between shrink-0 bg-white">
                     <p className="text-xs text-muted">
-                        {filtered.length} result{filtered.length !== 1 ? "s" : ""} shown
+                        {datesSelected
+                            ? <><span className="text-emerald-600 font-semibold">{availableCount}</span> available · {filtered.length - availableCount} booked</>
+                            : <>{filtered.length} result{filtered.length !== 1 ? "s" : ""} shown</>}
                     </p>
                     <button
                         type="button"

@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { X, Search, Check, User } from "lucide-react";
+import { X, Search, Check, User, CalendarOff } from "lucide-react";
 
 const AVATAR_COLORS = [
     "from-blue-500 to-indigo-600",
@@ -24,16 +24,19 @@ function avatarColor(name = "") {
     return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
 
-function DriverCard({ driver, isSelected, onSelect }) {
+function DriverCard({ driver, isSelected, onSelect, unavailable }) {
     const color = avatarColor(driver);
     return (
         <button
             type="button"
-            onClick={() => onSelect(driver)}
+            onClick={() => !unavailable && onSelect(driver)}
+            disabled={unavailable}
             className={`group w-full text-left rounded-2xl border-2 p-4 flex flex-col items-center gap-3 transition-all duration-200 focus:outline-none
-                ${isSelected
-                    ? "border-primary shadow-glow bg-primary/5 scale-[1.02]"
-                    : "border-border bg-white hover:border-primary/40 hover:shadow-soft"
+                ${unavailable
+                    ? "border-border opacity-50 cursor-not-allowed bg-white"
+                    : isSelected
+                        ? "border-primary shadow-glow bg-primary/5 scale-[1.02]"
+                        : "border-border bg-white hover:border-primary/40 hover:shadow-soft"
                 }`}
         >
             <div className="relative">
@@ -42,8 +45,16 @@ function DriverCard({ driver, isSelected, onSelect }) {
                 >
                     {initials(driver)}
                 </div>
-                <span className="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-emerald-500 border-2 border-white" title="Available" />
-                {isSelected && (
+
+                {unavailable ? (
+                    <span className="absolute bottom-0 right-0 w-5 h-5 rounded-full bg-rose-500 border-2 border-white flex items-center justify-center" title="Booked">
+                        <CalendarOff className="w-2.5 h-2.5 text-white" />
+                    </span>
+                ) : (
+                    <span className="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-emerald-500 border-2 border-white" title="Available" />
+                )}
+
+                {isSelected && !unavailable && (
                     <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary flex items-center justify-center shadow">
                         <Check className="w-3 h-3 text-white" strokeWidth={3} />
                     </div>
@@ -51,23 +62,65 @@ function DriverCard({ driver, isSelected, onSelect }) {
             </div>
 
             <div className="text-center">
-                <p className={`font-semibold text-sm leading-tight ${isSelected ? "text-primary" : "text-secondary"}`}>
+                <p className={`font-semibold text-sm leading-tight ${isSelected && !unavailable ? "text-primary" : "text-secondary"}`}>
                     {driver}
                 </p>
-                <p className="text-[11px] text-emerald-600 font-medium mt-0.5">Available</p>
+                <p className={`text-[11px] font-medium mt-0.5 ${unavailable ? "text-rose-500" : "text-emerald-600"}`}>
+                    {unavailable ? "Booked" : "Available"}
+                </p>
             </div>
         </button>
     );
 }
 
-export default function DriverPickerModal({ drivers = [], selectedDriver, onSelect, onClose }) {
+export default function DriverPickerModal({
+    drivers = [],
+    selectedDriver,
+    pickupDatetime,
+    returnDatetime,
+    currentBookingId,
+    onSelect,
+    onClose,
+}) {
     const [query, setQuery] = useState("");
+
+    const bookedDriverNames = useMemo(() => {
+        if (!pickupDatetime || !returnDatetime) return new Set();
+        const newStart = new Date(pickupDatetime);
+        const newEnd = new Date(returnDatetime);
+        if (isNaN(newStart) || isNaN(newEnd) || newEnd <= newStart) return new Set();
+
+        let existingBookings = [];
+        try {
+            const saved = localStorage.getItem("shan_bookings_v1");
+            existingBookings = saved ? JSON.parse(saved) : [];
+        } catch { existingBookings = []; }
+
+        const booked = new Set();
+        existingBookings.forEach((b) => {
+            if (b.booking_status === "CANCELLED") return;
+            if (currentBookingId && b.id === currentBookingId) return;
+            if (!b.driver_name || !b.pickup_datetime || !b.return_datetime) return;
+
+            const bStart = new Date(b.pickup_datetime);
+            const bEnd = new Date(b.return_datetime);
+            // Overlap check
+            if (newStart < bEnd && newEnd > bStart) {
+                booked.add(b.driver_name);
+            }
+        });
+        return booked;
+    }, [pickupDatetime, returnDatetime, currentBookingId]);
+
+    const datesSelected = !!(pickupDatetime && returnDatetime);
 
     const filtered = useMemo(() => {
         const q = query.toLowerCase().trim();
         if (!q) return drivers;
         return drivers.filter((d) => d.toLowerCase().includes(q));
     }, [drivers, query]);
+
+    const availableCount = filtered.filter((d) => !bookedDriverNames.has(d)).length;
 
     const handleSelect = (driver) => {
         onSelect(driver);
@@ -81,14 +134,18 @@ export default function DriverPickerModal({ drivers = [], selectedDriver, onSele
                 onClick={onClose}
             />
 
-
             <div className="relative z-10 w-full max-w-2xl bg-white rounded-3xl shadow-glow flex flex-col max-h-[85vh] overflow-hidden">
 
                 <div className="px-6 py-5 border-b border-border flex items-center justify-between shrink-0">
                     <div>
                         <h3 className="text-xl font-bold text-secondary">Assign a Driver</h3>
                         <p className="text-xs text-muted mt-0.5">
-                            {drivers.length} driver{drivers.length !== 1 ? "s" : ""} available — select one to assign to this booking
+                            {datesSelected
+                                ? <>
+                                    <span className="text-emerald-600 font-semibold">{availableCount} available</span>
+                                    {" "}& {filtered.length - availableCount} booked for the selected period
+                                </>
+                                : <>{drivers.length} driver{drivers.length !== 1 ? "s" : ""} — select dates first to see availability</>}
                         </p>
                     </div>
                     <button
@@ -149,6 +206,7 @@ export default function DriverPickerModal({ drivers = [], selectedDriver, onSele
                                     driver={d}
                                     isSelected={selectedDriver === d}
                                     onSelect={handleSelect}
+                                    unavailable={bookedDriverNames.has(d)}
                                 />
                             ))}
                         </div>
@@ -161,10 +219,11 @@ export default function DriverPickerModal({ drivers = [], selectedDriver, onSele
                     )}
                 </div>
 
-                {/* Footer */}
                 <div className="px-6 py-4 border-t border-border flex items-center justify-between shrink-0 bg-white">
                     <p className="text-xs text-muted">
-                        {filtered.length} driver{filtered.length !== 1 ? "s" : ""} shown
+                        {datesSelected
+                            ? <><span className="text-emerald-600 font-semibold">{availableCount}</span> available · {filtered.length - availableCount} booked</>
+                            : <>{filtered.length} driver{filtered.length !== 1 ? "s" : ""} shown</>}
                     </p>
                     <button
                         type="button"

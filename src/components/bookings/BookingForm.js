@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { UserCheck, CarFront, User } from "lucide-react";
 import VehiclePickerModal from "./VehiclePickerModal";
 import DriverPickerModal from "./DriverPickerModal";
@@ -62,12 +62,85 @@ function BookingForm({ formData, setFormData, formErrors, onSubmit, onCancel, su
 
     const [showVehiclePicker, setShowVehiclePicker] = useState(false);
     const [showDriverPicker, setShowDriverPicker] = useState(false);
+    const [returnDateError, setReturnDateError] = useState("");
+
+    // Auto-calculate rental days whenever pickup or return datetime changes
+    useEffect(() => {
+        if (formData.pickup_datetime && formData.return_datetime) {
+            const start = new Date(formData.pickup_datetime);
+            const end = new Date(formData.return_datetime);
+            if (!isNaN(start) && !isNaN(end) && end > start) {
+                setReturnDateError("");
+                const diffMs = end - start;
+                const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+                setFormData((prev) => ({ ...prev, rental_days: diffDays }));
+            } else {
+                setReturnDateError("Return date & time must be after the pickup date & time.");
+                setFormData((prev) => ({ ...prev, rental_days: "" }));
+            }
+        } else {
+            setReturnDateError("");
+            setFormData((prev) => ({ ...prev, rental_days: "" }));
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [formData.pickup_datetime, formData.return_datetime]);
 
     return (
         <>
             <form id="booking-form" onSubmit={onSubmit} className="overflow-y-auto p-6 space-y-5 flex-1">
 
+                <SectionTitle>Schedule</SectionTitle>
 
+
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <Label required>Pickup Date &amp; Time</Label>
+                        <Field
+                            type="datetime-local"
+                            min={todayMin}
+                            value={formData.pickup_datetime}
+                            onChange={set("pickup_datetime")}
+                            error={formErrors.pickup_datetime}
+                        />
+                    </div>
+                    <div>
+                        <Label required>Return Date &amp; Time</Label>
+                        <Field
+                            type="datetime-local"
+                            min={formData.pickup_datetime || todayMin}
+                            value={formData.return_datetime}
+                            onChange={set("return_datetime")}
+                            error={returnDateError || formErrors.return_datetime}
+                        />
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <Label>Rental Days</Label>
+                        <Field
+                            type="number"
+                            min="1"
+                            placeholder="Rental Days"
+                            value={formData.rental_days}
+                            readOnly
+                            error={formErrors.rental_days}
+                            className="w-full px-4 py-2.5 rounded-xl border border-border bg-slate-50 text-secondary focus:outline-none cursor-default"
+                        />
+                    </div>
+                    <div>
+                        <Label>Estimated Distance (km)</Label>
+                        <Field
+                            type="number"
+                            step="0.01"
+                            placeholder="e.g. 250.00"
+                            value={formData.estimated_distance_km}
+                            onChange={set("estimated_distance_km")}
+                            error={formErrors.estimated_distance_km}
+                        />
+                    </div>
+                </div>
 
                 <SectionTitle>Parties</SectionTitle>
 
@@ -150,56 +223,6 @@ function BookingForm({ formData, setFormData, formErrors, onSubmit, onCancel, su
                             value={formData.dropoff_location}
                             onChange={set("dropoff_location")}
                             error={formErrors.dropoff_location}
-                        />
-                    </div>
-                </div>
-
-                <SectionTitle>Schedule</SectionTitle>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <Label required>Pickup Date & Time</Label>
-                        <Field
-                            type="datetime-local"
-                            min={todayMin}
-                            value={formData.pickup_datetime}
-                            onChange={set("pickup_datetime")}
-                            error={formErrors.pickup_datetime}
-                        />
-                    </div>
-                    <div>
-                        <Label required>Return Date & Time</Label>
-                        <Field
-                            type="datetime-local"
-                            min={todayMin}
-                            value={formData.return_datetime}
-                            onChange={set("return_datetime")}
-                            error={formErrors.return_datetime}
-                        />
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <Label>Rental Days</Label>
-                        <Field
-                            type="number"
-                            min="1"
-                            placeholder="Rental Days"
-                            value={formData.rental_days}
-                            onChange={set("rental_days")}
-                            error={formErrors.rental_days}
-                        />
-                    </div>
-                    <div>
-                        <Label>Estimated Distance (km)</Label>
-                        <Field
-                            type="number"
-                            step="0.01"
-                            placeholder="e.g. 250.00"
-                            value={formData.estimated_distance_km}
-                            onChange={set("estimated_distance_km")}
-                            error={formErrors.estimated_distance_km}
                         />
                     </div>
                 </div>
@@ -304,6 +327,9 @@ function BookingForm({ formData, setFormData, formErrors, onSubmit, onCancel, su
                 <VehiclePickerModal
                     vehicles={vehicles}
                     selectedName={formData.vehicle_name}
+                    pickupDatetime={formData.pickup_datetime}
+                    returnDatetime={formData.return_datetime}
+                    currentBookingId={formData.id}
                     onSelect={(v) =>
                         setFormData((prev) => ({ ...prev, vehicle_name: v.model }))
                     }
@@ -315,6 +341,9 @@ function BookingForm({ formData, setFormData, formErrors, onSubmit, onCancel, su
                 <DriverPickerModal
                     drivers={drivers}
                     selectedDriver={formData.driver_name}
+                    pickupDatetime={formData.pickup_datetime}
+                    returnDatetime={formData.return_datetime}
+                    currentBookingId={formData.id}
                     onSelect={(d) =>
                         setFormData((prev) => ({
                             ...prev,
