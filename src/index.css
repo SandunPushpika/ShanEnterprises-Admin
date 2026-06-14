@@ -13,3 +13,40 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+/* ── Blue-themed datetime-local inputs ───────────────────────────── */
+input[type="datetime-local"] {
+  accent-color: #2563EB;
+  color-scheme: light;
+}
+
+/* Calendar icon — tint blue */
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: invert(28%) sepia(90%) saturate(1800%) hue-rotate(210deg) brightness(95%) contrast(100%);
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 4px;
+  transition: filter 0.2s, background 0.2s;
+}
+
+input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
+  background: rgba(37, 99, 235, 0.1);
+  filter: invert(23%) sepia(95%) saturate(2200%) hue-rotate(215deg) brightness(90%) contrast(100%);
+}
+
+/* Inner date/time text segments — highlight selected segment blue */
+input[type="datetime-local"]::-webkit-datetime-edit-fields-wrapper {
+  color: #0F172A;
+}
+
+input[type="datetime-local"]::-webkit-datetime-edit-year-field:focus,
+input[type="datetime-local"]::-webkit-datetime-edit-month-field:focus,
+input[type="datetime-local"]::-webkit-datetime-edit-day-field:focus,
+input[type="datetime-local"]::-webkit-datetime-edit-hour-field:focus,
+input[type="datetime-local"]::-webkit-datetime-edit-minute-field:focus,
+input[type="datetime-local"]::-webkit-datetime-edit-ampm-field:focus {
+  background-color: #2563EB;
+  color: #ffffff;
+  border-radius: 3px;
+  outline: none;
+}
