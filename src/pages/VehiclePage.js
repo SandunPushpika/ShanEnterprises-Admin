@@ -8,13 +8,14 @@ import VehicleForm from "../components/vehicle/vehicle-form";
 import DeleteConfirmModal from "../components/common/DeleteConfirmModal";
 import VehicleStatsBar from "../components/vehicles/VehicleStatsBar";
 import LoadingSpinner from "../components/common/LoadingSpinner";
+import Pagination from "../components/common/Pagination";
 import { addVehicle, getVehicles } from "../services/VehicelService";
 
 export default function VehiclePage() {
     const [vehicles, setVehicles] = useState([]);
     const [total, setTotal] = useState(0);
     const [pageNumber, setPageNumber] = useState(1);
-    const [pageSize] = useState(12);
+    const [pageSize] = useState(6);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
 
@@ -173,8 +174,8 @@ export default function VehiclePage() {
                         Retry
                     </button>
                 </div>
-            ) :
-                filtered.length > 0 ? (
+            ) : filtered.length > 0 ? (
+                <>
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                         {filtered.map((v) => (
                             <VehicleCard
@@ -185,22 +186,28 @@ export default function VehiclePage() {
                             />
                         ))}
                     </div>
-                ) : (
-                    <div className="bg-card border border-border rounded-3xl p-12 text-center shadow-card max-w-xl mx-auto">
-                        <CarFront className="w-16 h-16 text-muted/50 mx-auto stroke-[1.5]" />
-                        <h3 className="text-xl font-bold text-secondary mt-5">No Vehicles Found</h3>
-                        <p className="text-muted text-sm mt-2">
-                            No vehicles match &ldquo;{searchQuery}&rdquo;. Try a different keyword.
-                        </p>
-                        <button
-                            onClick={() => setSearchQuery("")}
-                            className="mt-6 px-5 py-2.5 rounded-xl border border-border text-secondary hover:bg-slate-50 font-semibold transition"
-                        >
-                            Clear Search
-                        </button>
-                    </div>
-                )
-            }
+                    <Pagination
+                        currentPage={pageNumber}
+                        totalPages={Math.ceil(total / pageSize)}
+                        onPageChange={setPageNumber}
+                        isLoading={isLoading}
+                    />
+                </>
+            ) : (
+                <div className="bg-card border border-border rounded-3xl p-12 text-center shadow-card max-w-xl mx-auto">
+                    <CarFront className="w-16 h-16 text-muted/50 mx-auto stroke-[1.5]" />
+                    <h3 className="text-xl font-bold text-secondary mt-5">No Vehicles Found</h3>
+                    <p className="text-muted text-sm mt-2">
+                        No vehicles match &ldquo;{searchQuery}&rdquo;. Try a different keyword.
+                    </p>
+                    <button
+                        onClick={() => setSearchQuery("")}
+                        className="mt-6 px-5 py-2.5 rounded-xl border border-border text-secondary hover:bg-slate-50 font-semibold transition"
+                    >
+                        Clear Search
+                    </button>
+                </div>
+            )}
 
             {isAddOpen && (
                 <Modal

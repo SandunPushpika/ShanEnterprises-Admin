@@ -1,6 +1,7 @@
 import React from "react";
 import { Edit2, Trash2, Fuel, Thermometer, Wifi, MapPin } from "lucide-react";
 import { getTransmissionType } from "../../utilities/EnumHelper";
+import { getFuelLabel } from "../../utils/VehicleEnums";
 
 const STATUS_STYLES = {
     Available: "bg-emerald-50 text-emerald-700 border-emerald-200/60",
@@ -55,7 +56,7 @@ function VehicleCard({ vehicle, onEdit, onDelete }) {
                             {vehicle.registrationNumber}
                         </div>
                         <div className="text-muted flex items-center gap-1">
-                            <Fuel className="w-3.5 h-3.5" /> {vehicle.fuel}
+                            <Fuel className="w-3.5 h-3.5" /> {getFuelLabel(vehicle.fuel)}
                         </div>
                         <div className="text-muted">
                             <span className="font-semibold text-secondary-light">Seats: </span>
