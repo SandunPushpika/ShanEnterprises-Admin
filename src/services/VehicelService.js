@@ -104,3 +104,18 @@ export const deleteVehicle = async (id) => {
         console.log(error);
     }
 }
+
+export const getVehicleImages = async (vehicleId) => {
+    try {
+        const response = await axiosInstance.get(`${vehicleEndpoint}/${vehicleId}/images`);
+
+        if (!response.data.success) {
+            throw new Error(response.data.message || "Failed to fetch vehicle images");
+        }
+
+        return response.data.data;
+    } catch (error) {
+        console.error("VehicleService.getVehicleImages:", error);
+        throw error;
+    }
+}

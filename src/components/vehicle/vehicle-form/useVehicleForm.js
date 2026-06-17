@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { getAllVehicleBrands, getAllVehicleTypes } from "../../../services/VehicelService";
+import { getAllVehicleBrands, getAllVehicleTypes, getVehicleImages } from "../../../services/VehicelService";
 import { uploadMultipleFiles, blobTypes } from "../../../services/FileUploader";
 import validateVehicleForm from "./vehicleValidation";
 import { getTransmissionValue, getFuelValue, getVehicleStatusValue } from "../../../utils/VehicleEnums";
@@ -103,6 +103,31 @@ export default function useVehicleForm({ vehicle = null, onSave = () => Promise.
     useEffect(() => {
         setFormData(mapVehicleToFormState(vehicle));
     }, [vehicle]);
+
+    useEffect(() => {
+        loadImages();
+    }, []);
+
+    const loadImages = async () => {
+        try {
+            if (vehicle == null)
+                return;
+
+            var results = await getVehicleImages(vehicle.id);
+
+            setFormData((prev) => ({
+                ...prev,
+                images: [
+                    ...prev.images,
+                    ...results.map((img) => ({
+                        previewUrl: img.imageUrl,
+                    })),
+                ],
+            }));
+        } catch (error) {
+            console.log(error);
+        }
+    }
 
     const loadLookupData = useCallback(async () => {
         setIsLookupLoading(true);
@@ -272,8 +297,8 @@ export default function useVehicleForm({ vehicle = null, onSave = () => Promise.
                     seatCapacity: Number(formData.seatCapacity),
                     luggageCapacity: Number(formData.luggageCapacity),
                     manufactureYear: Number(formData.manufactureYear),
-                    imageUrls,
                     mainImageUrl: imageUrls[0] || "",
+                    imageUrls: imageUrls.slice(1)
                 };
 
                 delete payload.images;
