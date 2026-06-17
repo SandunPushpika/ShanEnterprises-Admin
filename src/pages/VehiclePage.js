@@ -9,7 +9,7 @@ import DeleteConfirmModal from "../components/common/DeleteConfirmModal";
 import VehicleStatsBar from "../components/vehicles/VehicleStatsBar";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import Pagination from "../components/common/Pagination";
-import { addVehicle, getVehicles, updateVehicle } from "../services/VehicelService";
+import { addVehicle, deleteVehicle, getVehicles, updateVehicle } from "../services/VehicelService";
 import { getVehicleStatusLabel } from "../utils/VehicleEnums";
 
 export default function VehiclePage() {
@@ -31,9 +31,9 @@ export default function VehiclePage() {
         loadVehicles();
     }, [pageNumber]);
 
-    const available = vehicles.filter((v) => getVehicleStatusLabel(v.status) === "Available").length;
-    const rented = vehicles.filter((v) => getVehicleStatusLabel(v.status) === "Booked").length;
-    const maintenance = vehicles.filter((v) => getVehicleStatusLabel(v.status) === "Maintenance").length;
+    const available = vehicles.filter((v) => v.status == 0).length;
+    const rented = vehicles.filter((v) => v.status == 1).length;
+    const maintenance = vehicles.filter((v) => v.status == 2).length;
 
     const filtered = vehicles.filter((v) => {
         const q = searchQuery.toLowerCase().trim();
@@ -127,10 +127,19 @@ export default function VehiclePage() {
         setIsDeleteOpen(true);
     };
 
-    const handleDelete = () => {
-        setVehicles((prev) => prev.filter((v) => v.id !== selectedVehicle.id));
+    const handleDelete = async () => {
+        
+        try{
+            await deleteVehicle(selectedVehicle.id);
+        }catch(error){
+            setError("Unable to delete vehicle");
+            showToast("Unable to delete vehicle!");
+        }
+
         setIsDeleteOpen(false);
         showToast(`${selectedVehicle.model} removed from fleet.`, "error");
+
+        await loadVehicles();
         setSelectedVehicle(null);
     };
 
