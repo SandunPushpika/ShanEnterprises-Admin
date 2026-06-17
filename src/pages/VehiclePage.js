@@ -4,34 +4,11 @@ import Modal from "../components/common/Modal";
 import Toast from "../components/common/Toast";
 import SearchBar from "../components/common/Searchbar";
 import VehicleCard from "../components/vehicles/VehicleCard";
-import VehicleForm from "../components/vehicles/VehicleForm";
+import VehicleForm from "../components/vehicle/vehicle-form";
 import DeleteConfirmModal from "../components/common/DeleteConfirmModal";
 import VehicleStatsBar from "../components/vehicles/VehicleStatsBar";
 import LoadingSpinner from "../components/common/LoadingSpinner";
-import { getVehicles } from "../services/VehicelService";
-
-const BLANK_FORM = {
-    brand: null,
-    type: null,
-    model: "",
-    registrationNumber: "",
-    manufactureYear: new Date().getFullYear(),
-    transmission: "Automatic",
-    fuel: "Petrol",
-    dailyRentalPrice: "",
-    pricePerKm: "",
-    color: "",
-    seatCapacity: "",
-    luggageCapacity: "",
-    description: "",
-    mainImageUrl: "",
-    images: [],
-    imagePreviews: [],
-    airConditioned: false,
-    hasBluetooth: false,
-    hasGps: false,
-    status: "Available",
-};
+import { addVehicle, getVehicles } from "../services/VehicelService";
 
 export default function VehiclePage() {
     const [vehicles, setVehicles] = useState([]);
@@ -46,8 +23,6 @@ export default function VehiclePage() {
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
     const [selectedVehicle, setSelectedVehicle] = useState(null);
-    const [formData, setFormData] = useState(BLANK_FORM);
-    const [formErrors, setFormErrors] = useState({});
     const [toast, setToast] = useState(null);
 
     useEffect(() => {
@@ -107,82 +82,32 @@ export default function VehiclePage() {
         setTimeout(() => setToast(null), 3000);
     };
 
-    const validate = () => {
-        const e = {};
-        if (!formData.brand) e.brand = "Brand is required";
-        if (!formData.type) e.type = "Type is required";
-        if (!formData.model.trim()) e.model = "Model is required";
-        if (!formData.registrationNumber.trim()) e.registrationNumber = "Registration number is required";
-        if (!formData.manufactureYear || Number(formData.manufactureYear) < 1900)
-            e.manufactureYear = "Enter a valid year";
-        if (!formData.dailyRentalPrice || Number(formData.dailyRentalPrice) <= 0)
-            e.dailyRentalPrice = "Enter a valid daily price";
-        if (!formData.pricePerKm || Number(formData.pricePerKm) <= 0)
-            e.pricePerKm = "Enter a valid price per km";
-        if (!formData.color.trim()) e.color = "Color is required";
-        if (!formData.seatCapacity || Number(formData.seatCapacity) <= 0)
-            e.seatCapacity = "Enter seat capacity";
-        if (!formData.luggageCapacity || Number(formData.luggageCapacity) <= 0)
-            e.luggageCapacity = "Enter luggage capacity";
-        if (formData.imagePreviews.length === 0)
-            e.imagePreviews = "Upload at least one vehicle image";
-        setFormErrors(e);
-        return Object.keys(e).length === 0;
-    };
-
     const openAdd = () => {
-        setFormData(BLANK_FORM);
-        setFormErrors({});
+        setSelectedVehicle(null);
         setIsAddOpen(true);
     };
 
-    const handleAdd = (e) => {
-        e.preventDefault();
-        if (!validate()) return;
-        const newVehicle = {
-            ...formData,
-            id: Date.now(),
-            dailyRentalPrice: Number(formData.dailyRentalPrice),
-            pricePerKm: Number(formData.pricePerKm),
-            seatCapacity: Number(formData.seatCapacity),
-            luggageCapacity: Number(formData.luggageCapacity),
-            manufactureYear: Number(formData.manufactureYear),
-            mainImageUrl: formData.imagePreviews[0] || "",
-            images: formData.imagePreviews,
-        };
-        setVehicles((prev) => [newVehicle, ...prev]);
+    const handleCreate = async (newVehicle) => {
+        try {
+            await addVehicle(newVehicle);
+        } catch (exception) {
+            setError("Unable to add vehicle");
+            showToast("Unable to add vehicle", "error");
+            return;
+        }
         setIsAddOpen(false);
         showToast(`${newVehicle.model} registered successfully!`);
     };
 
     const openEdit = (vehicle) => {
         setSelectedVehicle(vehicle);
-        setFormData({
-            ...vehicle,
-            imagePreviews: vehicle.images?.length > 0 ? vehicle.images : vehicle.mainImageUrl ? [vehicle.mainImageUrl] : [],
-        });
-        setFormErrors({});
         setIsEditOpen(true);
     };
 
-    const handleEdit = (e) => {
-        e.preventDefault();
-        if (!validate()) return;
+    const handleUpdate = async (updatedVehicle) => {
         setVehicles((prev) =>
-            prev.map((v) =>
-                v.id === selectedVehicle.id
-                    ? {
-                        ...v,
-                        ...formData,
-                        dailyRentalPrice: Number(formData.dailyRentalPrice),
-                        pricePerKm: Number(formData.pricePerKm),
-                        seatCapacity: Number(formData.seatCapacity),
-                        luggageCapacity: Number(formData.luggageCapacity),
-                        manufactureYear: Number(formData.manufactureYear),
-                        mainImageUrl: formData.imagePreviews[0] || v.mainImageUrl,
-                        images: formData.imagePreviews,
-                    }
-                    : v
+            prev.map((vehicle) =>
+                vehicle.id === updatedVehicle.id ? updatedVehicle : vehicle
             )
         );
         setIsEditOpen(false);
@@ -284,10 +209,8 @@ export default function VehiclePage() {
                     onClose={() => setIsAddOpen(false)}
                 >
                     <VehicleForm
-                        formData={formData}
-                        setFormData={setFormData}
-                        formErrors={formErrors}
-                        onSubmit={handleAdd}
+                        vehicle={null}
+                        onSave={handleCreate}
                         onCancel={() => setIsAddOpen(false)}
                         submitLabel="Register Vehicle"
                     />
@@ -301,10 +224,8 @@ export default function VehiclePage() {
                     onClose={() => setIsEditOpen(false)}
                 >
                     <VehicleForm
-                        formData={formData}
-                        setFormData={setFormData}
-                        formErrors={formErrors}
-                        onSubmit={handleEdit}
+                        vehicle={selectedVehicle}
+                        onSave={handleUpdate}
                         onCancel={() => setIsEditOpen(false)}
                         submitLabel="Save Changes"
                     />

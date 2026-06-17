@@ -65,3 +65,16 @@ export const getAllVehicleTypes = async () => {
         throw error;
     }
 }
+
+export const addVehicle = async (payload) => {
+    try{
+
+        const response = await axiosInstance.post(`${vehicleEndpoint}`, payload);
+
+        if(!response.data.success)
+            throw new Error("Failed to add vehicle");
+
+    }catch (error){
+        console.log(error);
+    }
+}
