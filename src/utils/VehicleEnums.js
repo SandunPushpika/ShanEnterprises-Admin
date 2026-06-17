@@ -22,6 +22,13 @@ export const FUEL_LABELS = {
     3: "Electric",
 };
 
+export const VEHICLE_STATUS = {
+    0: "Available",
+    1: "Booked",
+    2: "Maintenence",
+    3: "Unavailable"
+}
+
 export const getTransmissionLabel = (value) => {
     const numValue = Number(value);
     return TRANSMISSION_LABELS[numValue] || "Automatic";
@@ -41,3 +48,8 @@ export const getFuelValue = (label) => {
     const entry = Object.entries(FUEL_LABELS).find(([_, v]) => v === label);
     return entry ? Number(entry[0]) : FUEL_TYPES.PETROL;
 };
+
+export const getVehicleStatusLabel = (value) => {
+    const numValue = Number(value);
+    return VEHICLE_STATUS[numValue] || "Available";
+}
