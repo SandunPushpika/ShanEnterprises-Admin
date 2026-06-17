@@ -78,3 +78,29 @@ export const addVehicle = async (payload) => {
         console.log(error);
     }
 }
+
+export const updateVehicle = async (id, payload) => {
+    try{
+
+        const response = await axiosInstance.put(`${vehicleEndpoint}/${id}`, payload);
+
+        if(!response.data.success)
+            throw new Error(response.data.message);
+
+    }catch (error){
+        console.log(error);
+    }
+}
+
+export const deleteVehicle = async (id) => {
+    try{
+
+        const response = await axiosInstance.delete(`${vehicleEndpoint}/${id}`);
+
+        if(!response.data.success)
+            throw new Error(response.data.message);
+
+    }catch (error){
+        console.log(error);
+    }
+}

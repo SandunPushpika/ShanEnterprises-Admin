@@ -95,19 +95,6 @@ export default function VehicleFeatures({
                         placeholder="Short vehicle description..."
                     />
                 </div>
-                <div>
-                    <Label htmlFor="status">Status</Label>
-                    <Select
-                        id="status"
-                        name="status"
-                        value={formData.status}
-                        onChange={onFieldChange("status")}
-                    >
-                        <option value="Available">Available</option>
-                        <option value="Rented">Rented</option>
-                        <option value="Maintenance">Maintenance</option>
-                    </Select>
-                </div>
             </div>
         </section>
     );

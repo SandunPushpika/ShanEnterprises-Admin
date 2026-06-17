@@ -9,7 +9,8 @@ import DeleteConfirmModal from "../components/common/DeleteConfirmModal";
 import VehicleStatsBar from "../components/vehicles/VehicleStatsBar";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import Pagination from "../components/common/Pagination";
-import { addVehicle, getVehicles } from "../services/VehicelService";
+import { addVehicle, getVehicles, updateVehicle } from "../services/VehicelService";
+import { getVehicleStatusLabel } from "../utils/VehicleEnums";
 
 export default function VehiclePage() {
     const [vehicles, setVehicles] = useState([]);
@@ -30,9 +31,9 @@ export default function VehiclePage() {
         loadVehicles();
     }, [pageNumber]);
 
-    const available = vehicles.filter((v) => v.status === "Available").length;
-    const rented = vehicles.filter((v) => v.status === "Rented").length;
-    const maintenance = vehicles.filter((v) => v.status === "Maintenance").length;
+    const available = vehicles.filter((v) => getVehicleStatusLabel(v.status) === "Available").length;
+    const rented = vehicles.filter((v) => getVehicleStatusLabel(v.status) === "Booked").length;
+    const maintenance = vehicles.filter((v) => getVehicleStatusLabel(v.status) === "Maintenance").length;
 
     const filtered = vehicles.filter((v) => {
         const q = searchQuery.toLowerCase().trim();
@@ -42,9 +43,9 @@ export default function VehiclePage() {
             v.brand.name.toLowerCase().includes(q) ||
             v.type.name.toLowerCase().includes(q) ||
             v.registrationNumber.toLowerCase().includes(q) ||
-            v.status.toLowerCase().includes(q) ||
-            v.fuel.toLowerCase().includes(q) ||
-            v.color.toLowerCase().includes(q)
+            getVehicleStatusLabel(v.status).toLowerCase().includes(q) ||
+            String(v.fuel).toLowerCase().includes(q) ||
+            String(v.color).toLowerCase().includes(q)
         );
     });
 
@@ -97,6 +98,7 @@ export default function VehiclePage() {
             return;
         }
         setIsAddOpen(false);
+        await loadVehicles();
         showToast(`${newVehicle.model} registered successfully!`);
     };
 
@@ -106,12 +108,17 @@ export default function VehiclePage() {
     };
 
     const handleUpdate = async (updatedVehicle) => {
-        setVehicles((prev) =>
-            prev.map((vehicle) =>
-                vehicle.id === updatedVehicle.id ? updatedVehicle : vehicle
-            )
-        );
+        
+        try {
+            await updateVehicle(updatedVehicle.id, updatedVehicle);
+        } catch (exception) {
+            setError("Unable to add vehicle");
+            showToast("Unable to add vehicle", "error");
+            return;
+        }
+
         setIsEditOpen(false);
+        await loadVehicles();
         showToast("Vehicle details updated!");
     };
 

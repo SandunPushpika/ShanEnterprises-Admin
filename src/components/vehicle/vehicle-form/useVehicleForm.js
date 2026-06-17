@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { getAllVehicleBrands, getAllVehicleTypes } from "../../../services/VehicelService";
 import { uploadMultipleFiles, blobTypes } from "../../../services/FileUploader";
 import validateVehicleForm from "./vehicleValidation";
-import { getTransmissionValue, getFuelValue } from "../../../utils/VehicleEnums";
+import { getTransmissionValue, getFuelValue, getVehicleStatusValue } from "../../../utils/VehicleEnums";
 
 const INITIAL_FORM_STATE = {
     id: undefined,
@@ -21,7 +21,7 @@ const INITIAL_FORM_STATE = {
     seatCapacity: "",
     luggageCapacity: "",
     description: "",
-    status: "Available",
+    status: "0",
     airConditioned: false,
     hasBluetooth: false,
     hasGps: false,
@@ -75,7 +75,7 @@ const mapVehicleToFormState = (vehicle) => {
         seatCapacity: String(vehicle.seatCapacity ?? ""),
         luggageCapacity: String(vehicle.luggageCapacity ?? ""),
         description: vehicle.description ?? "",
-        status: vehicle.status ?? "Available",
+        status: 0,
         airConditioned: !!vehicle.airConditioned,
         hasBluetooth: !!vehicle.hasBluetooth,
         hasGps: !!vehicle.hasGps,
@@ -266,6 +266,7 @@ export default function useVehicleForm({ vehicle = null, onSave = () => Promise.
                     typeId: selectedType?.id ?? null,
                     transmission: Number(formData.transmission),
                     fuel: Number(formData.fuel),
+                    status: 0,
                     dailyRentalPrice: Number(formData.dailyRentalPrice),
                     pricePerKm: Number(formData.pricePerKm),
                     seatCapacity: Number(formData.seatCapacity),

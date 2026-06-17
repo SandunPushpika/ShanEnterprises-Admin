@@ -5,11 +5,14 @@ import { getFuelLabel, getVehicleStatusLabel } from "../../utils/VehicleEnums";
 
 const STATUS_STYLES = {
     Available: "bg-emerald-50 text-emerald-700 border-emerald-200/60",
-    Rented: "bg-amber-50 text-amber-700 border-amber-200/60",
+    Booked: "bg-amber-50 text-amber-700 border-amber-200/60",
     Maintenance: "bg-rose-50 text-rose-700 border-rose-200/60",
+    Unavailable: "bg-slate-100 text-slate-700 border-slate-200/60",
 };
 
 function VehicleCard({ vehicle, onEdit, onDelete }) {
+    const statusLabel = getVehicleStatusLabel(vehicle.status);
+
     return (
         <div className="group bg-card border border-border rounded-3xl overflow-hidden shadow-card hover:shadow-soft transition-all duration-300 flex flex-col">
             {/* Image Section */}
@@ -20,10 +23,10 @@ function VehicleCard({ vehicle, onEdit, onDelete }) {
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
                 <span
-                    className={`absolute top-4 right-4 px-3.5 py-1.5 rounded-full border text-xs font-bold shadow-sm ${STATUS_STYLES[vehicle.status] ?? STATUS_STYLES.Available
+                    className={`absolute top-4 right-4 px-3.5 py-1.5 rounded-full border text-xs font-bold shadow-sm ${STATUS_STYLES[statusLabel] ?? STATUS_STYLES.Available
                         }`}
                 >
-                    {getVehicleStatusLabel(vehicle.status)}
+                    {statusLabel}
                 </span>
                 <span className="absolute bottom-4 left-4 bg-secondary/80 backdrop-blur-md text-white px-3 py-1 rounded-lg text-xs font-semibold">
                     {vehicle.type.name}

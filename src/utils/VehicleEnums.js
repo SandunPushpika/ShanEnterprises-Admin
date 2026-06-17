@@ -25,9 +25,14 @@ export const FUEL_LABELS = {
 export const VEHICLE_STATUS = {
     0: "Available",
     1: "Booked",
-    2: "Maintenence",
-    3: "Unavailable"
-}
+    2: "Maintenance",
+};
+
+export const VEHICLE_STATUS_VALUES = {
+    Available: 0,
+    Booked: 1,
+    Maintenance: 2,
+};
 
 export const getTransmissionLabel = (value) => {
     const numValue = Number(value);
@@ -50,6 +55,26 @@ export const getFuelValue = (label) => {
 };
 
 export const getVehicleStatusLabel = (value) => {
+    if (typeof value === "string") {
+        const normalized = value.trim();
+        if (VEHICLE_STATUS_VALUES[normalized] !== undefined) {
+            return normalized;
+        }
+    }
+
     const numValue = Number(value);
     return VEHICLE_STATUS[numValue] || "Available";
-}
+};
+
+export const getVehicleStatusValue = (label) => {
+    if (typeof label !== "string") {
+        return Number(label) || 0;
+    }
+
+    if (VEHICLE_STATUS_VALUES[label] !== undefined) {
+        return VEHICLE_STATUS_VALUES[label];
+    }
+
+    const numValue = Number(label);
+    return Number.isNaN(numValue) ? 0 : numValue;
+};
