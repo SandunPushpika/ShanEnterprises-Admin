@@ -1,5 +1,6 @@
 import React from "react";
 import { Edit2, Trash2, Fuel, Thermometer, Wifi, MapPin } from "lucide-react";
+import { getTransmissionType } from "../../utilities/EnumHelper";
 
 const STATUS_STYLES = {
     Available: "bg-emerald-50 text-emerald-700 border-emerald-200/60",
@@ -24,7 +25,7 @@ function VehicleCard({ vehicle, onEdit, onDelete }) {
                     {vehicle.status}
                 </span>
                 <span className="absolute bottom-4 left-4 bg-secondary/80 backdrop-blur-md text-white px-3 py-1 rounded-lg text-xs font-semibold">
-                    {vehicle.typeId.replace(/_/g, " ").replace("type ", "")}
+                    {vehicle.type.name}
                 </span>
             </div>
 
@@ -35,7 +36,7 @@ function VehicleCard({ vehicle, onEdit, onDelete }) {
                     <div className="flex items-start justify-between">
                         <div>
                             <h3 className="text-xl font-bold text-secondary tracking-tight">
-                                {vehicle.brandId.replace(/_/g, " ").replace("brand ", "")} {vehicle.model}
+                                {vehicle.brand.name} {vehicle.model}
                             </h3>
                             <p className="text-sm text-muted mt-0.5">
                                 {vehicle.manufactureYear} · {vehicle.color}
@@ -66,7 +67,7 @@ function VehicleCard({ vehicle, onEdit, onDelete }) {
                         </div>
                         <div className="text-muted">
                             <span className="font-semibold text-secondary-light">Trans: </span>
-                            {vehicle.transmission}
+                            {getTransmissionType(vehicle.transmission)}
                         </div>
                         <div className="text-muted">
                             <span className="font-semibold text-secondary-light">$/km: </span>
