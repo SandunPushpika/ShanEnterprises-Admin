@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Plus, CalendarX2 } from "lucide-react";
 import Modal from "../components/common/Modal";
 import Toast from "../components/common/Toast";
@@ -8,127 +8,9 @@ import BookingStatsBar from "../components/bookings/BookingStatsBar";
 import BookingCard from "../components/bookings/BookingCard";
 import BookingForm from "../components/bookings/BookingForm";
 import BookingDetailModal from "../components/bookings/BookingDetailModal";
-
-const INITIAL_VEHICLES = [];
-const loadVehicles = () => {
-    try {
-        const saved = localStorage.getItem("drivelux_vehicles_v2");
-        return saved ? JSON.parse(saved) : INITIAL_VEHICLES;
-    } catch { return INITIAL_VEHICLES; }
-};
-
-const INITIAL_BOOKINGS = [
-    {
-        id: 1,
-        customer_name: "Amal Perera",
-        vehicle_name: "Tesla Model S",
-        driver_name: "Suresh Bandara",
-        booking_reference: "BK-20240001",
-        pickup_location: "Colombo Fort, CMB",
-        dropoff_location: "Bandaranaike International Airport",
-        pickup_datetime: "2024-07-10T08:00",
-        return_datetime: "2024-07-13T18:00",
-        rental_days: 3,
-        estimated_distance_km: "320.00",
-        with_driver: true,
-        base_rental_cost: "540.00",
-        driver_fee: "90.00",
-        tax_amount: "63.00",
-        discount_amount: "20.00",
-        total_amount: "673.00",
-        special_notes: "Customer requires child seat.",
-        booking_status: "CONFIRMED",
-        cancelled_reason: "",
-    },
-    {
-        id: 2,
-        customer_name: "Nirosha Fernando",
-        vehicle_name: "Range Rover Sport",
-        driver_name: "",
-        booking_reference: "BK-20240002",
-        pickup_location: "Kandy City Centre",
-        dropoff_location: "Nuwara Eliya",
-        pickup_datetime: "2024-07-15T09:30",
-        return_datetime: "2024-07-17T17:00",
-        rental_days: 2,
-        estimated_distance_km: "180.00",
-        with_driver: false,
-        base_rental_cost: "500.00",
-        driver_fee: "0.00",
-        tax_amount: "50.00",
-        discount_amount: "0.00",
-        total_amount: "550.00",
-        special_notes: "",
-        booking_status: "PENDING",
-        cancelled_reason: "",
-    },
-    {
-        id: 3,
-        customer_name: "Dilan Jayawardena",
-        vehicle_name: "Porsche 911 Carrera",
-        driver_name: "Kamal Rathnayake",
-        booking_reference: "BK-20240003",
-        pickup_location: "Galle Dutch Fort",
-        dropoff_location: "Colombo Fort, CMB",
-        pickup_datetime: "2024-06-20T07:00",
-        return_datetime: "2024-06-22T20:00",
-        rental_days: 2,
-        estimated_distance_km: "250.00",
-        with_driver: true,
-        base_rental_cost: "640.00",
-        driver_fee: "80.00",
-        tax_amount: "72.00",
-        discount_amount: "50.00",
-        total_amount: "742.00",
-        special_notes: "VIP client — priority service.",
-        booking_status: "COMPLETED",
-        cancelled_reason: "",
-    },
-    {
-        id: 4,
-        customer_name: "Sanduni Wickramasinghe",
-        vehicle_name: "Audi Q8",
-        driver_name: "",
-        booking_reference: "BK-20240004",
-        pickup_location: "Negombo Beach",
-        dropoff_location: "Colombo Hilton",
-        pickup_datetime: "2024-08-01T10:00",
-        return_datetime: "2024-08-03T10:00",
-        rental_days: 2,
-        estimated_distance_km: "90.00",
-        with_driver: false,
-        base_rental_cost: "420.00",
-        driver_fee: "0.00",
-        tax_amount: "42.00",
-        discount_amount: "0.00",
-        total_amount: "462.00",
-        special_notes: "Delivery to hotel lobby.",
-        booking_status: "CANCELLED",
-        cancelled_reason: "Customer changed travel plans.",
-    },
-    {
-        id: 5,
-        customer_name: "Ruwan Kumara",
-        vehicle_name: "BMW M4 Competition",
-        driver_name: "Thilak Seneviratne",
-        booking_reference: "BK-20240005",
-        pickup_location: "Colombo 03",
-        dropoff_location: "Hambantota",
-        pickup_datetime: "2024-09-05T06:00",
-        return_datetime: "2024-09-07T22:00",
-        rental_days: 2,
-        estimated_distance_km: "400.00",
-        with_driver: true,
-        base_rental_cost: "560.00",
-        driver_fee: "100.00",
-        tax_amount: "66.00",
-        discount_amount: "30.00",
-        total_amount: "696.00",
-        special_notes: "",
-        booking_status: "CONFIRMED",
-        cancelled_reason: "",
-    },
-];
+import LoadingSpinner from "../components/common/LoadingSpinner";
+import Pagination from "../components/common/Pagination";
+import { getAllBookings } from "../services/BookingService";
 
 const BLANK_FORM = {
     customer_name: "",
@@ -152,30 +34,42 @@ const BLANK_FORM = {
     cancelled_reason: "",
 };
 
-/* ── Known drivers ───────────────────────────────────────────────── */
-const DRIVERS = [
-    "Suresh Bandara",
-    "Kamal Rathnayake",
-    "Thilak Seneviratne",
-    "Nimal Jayasuriya",
-    "Roshan Perera",
-    "Asanka Kumara",
-];
+
+function mapBooking(b) {
+    return {
+        id: b.id,
+        customer_name: b.customerName ?? "",
+        vehicle_name: b.vehicleModel ?? "",
+        driver_name: b.driverName ?? "",
+        booking_reference: b.bookingReference ?? "",
+        pickup_location: b.pickupLocation ?? "",
+        dropoff_location: b.dropoffLocation ?? "",
+        pickup_datetime: b.pickupDateTime ?? "",
+        return_datetime: b.returnDateTime ?? "",
+        rental_days: b.rentalDays ?? null,
+        estimated_distance_km: b.estimatedDistanceKm ?? "",
+        with_driver: b.withDriver ?? false,
+        base_rental_cost: b.baseRentalCost ?? "0.00",
+        driver_fee: b.driverFee ?? "0.00",
+        tax_amount: b.taxAmount ?? "0.00",
+        discount_amount: b.discountAmount ?? "0.00",
+        total_amount: b.totalAmount ?? "0.00",
+        special_notes: b.specialNotes ?? "",
+        booking_status: b.bookingStatus ?? "PENDING",
+        cancelled_reason: b.cancelledReason ?? "",
+        confirmed_at: b.confirmedAt ?? null,
+        completed_at: b.completedAt ?? null,
+        created_at: b.createdAt ?? null,
+    };
+}
 
 export default function BookingPage() {
-    const [bookings, setBookings] = useState(() => {
-        const saved = localStorage.getItem("shan_bookings_v1");
-        if (!saved) return INITIAL_BOOKINGS;
-        try { return JSON.parse(saved); }
-        catch { localStorage.removeItem("shan_bookings_v1"); return INITIAL_BOOKINGS; }
-    });
-
-    const [vehicles] = useState(() => loadVehicles().filter((v) => v.status === "Available"));
-
-    useEffect(() => {
-        try { localStorage.setItem("shan_bookings_v1", JSON.stringify(bookings)); }
-        catch (err) { console.warn("Failed to persist bookings:", err); }
-    }, [bookings]);
+    const [bookings, setBookings] = useState([]);
+    const [total, setTotal] = useState(0);
+    const [pageNumber, setPageNumber] = useState(1);
+    const [pageSize] = useState(9);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState(null);
 
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState("ALL");
@@ -189,7 +83,31 @@ export default function BookingPage() {
     const [formErrors, setFormErrors] = useState({});
     const [toast, setToast] = useState(null);
 
-    const total = bookings.length;
+    const loadBookings = useCallback(async () => {
+        try {
+            setIsLoading(true);
+            setError(null);
+
+            const result = await getAllBookings({ pageNumber, pageSize });
+
+            setBookings((result.data ?? []).map(mapBooking));
+            setTotal(result.total ?? 0);
+        } catch (err) {
+            const message =
+                err.response?.data?.message ||
+                err.message ||
+                "Failed to load bookings";
+            setError(message);
+            showToast(message, "error");
+        } finally {
+            setIsLoading(false);
+        }
+    }, [pageNumber, pageSize]);
+
+    useEffect(() => {
+        loadBookings();
+    }, [loadBookings]);
+
     const confirmed = bookings.filter((b) => b.booking_status === "CONFIRMED").length;
     const completed = bookings.filter((b) => b.booking_status === "COMPLETED").length;
     const pending = bookings.filter((b) => b.booking_status === "PENDING").length;
@@ -230,23 +148,16 @@ export default function BookingPage() {
         return Object.keys(e).length === 0;
     };
 
-    const openView = (booking) => {
-        setViewedBooking(booking);
-        setIsViewOpen(true);
-    };
+    const openView = (booking) => { setViewedBooking(booking); setIsViewOpen(true); };
 
-    const openAdd = () => {
-        setFormData(BLANK_FORM);
-        setFormErrors({});
-        setIsAddOpen(true);
-    };
+    const openAdd = () => { setFormData(BLANK_FORM); setFormErrors({}); setIsAddOpen(true); };
 
     const handleAdd = (e) => {
         e.preventDefault();
         if (!validate()) return;
-        setBookings((prev) => [{ ...formData, id: Date.now() }, ...prev]);
         setIsAddOpen(false);
         showToast(`Booking ${formData.booking_reference} created!`);
+        loadBookings();
     };
 
     const openEdit = (booking) => {
@@ -259,23 +170,18 @@ export default function BookingPage() {
     const handleEdit = (e) => {
         e.preventDefault();
         if (!validate()) return;
-        setBookings((prev) =>
-            prev.map((b) => (b.id === selectedBooking.id ? { ...b, ...formData } : b))
-        );
         setIsEditOpen(false);
         showToast("Booking updated successfully!");
+        loadBookings();
     };
 
-    const openDelete = (booking) => {
-        setSelectedBooking(booking);
-        setIsDeleteOpen(true);
-    };
+    const openDelete = (booking) => { setSelectedBooking(booking); setIsDeleteOpen(true); };
 
     const handleDelete = () => {
-        setBookings((prev) => prev.filter((b) => b.id !== selectedBooking.id));
         setIsDeleteOpen(false);
         showToast(`Booking ${selectedBooking.booking_reference} removed.`, "error");
         setSelectedBooking(null);
+        loadBookings();
     };
 
     const STATUS_PILLS = ["ALL", "PENDING", "CONFIRMED", "COMPLETED", "CANCELLED"];
@@ -291,7 +197,6 @@ export default function BookingPage() {
         <div className="p-4 md:p-8 min-h-[calc(100vh-80px)] space-y-8 bg-surface">
             {toast && <Toast type={toast.type} message={toast.message} />}
 
-            {/* ── Header ── */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-extrabold text-secondary tracking-tight font-display">
@@ -341,18 +246,38 @@ export default function BookingPage() {
                 </div>
             </div>
 
-            {filtered.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {filtered.map((b) => (
-                        <BookingCard
-                            key={b.id}
-                            booking={b}
-                            onView={openView}
-                            onEdit={openEdit}
-                            onDelete={openDelete}
-                        />
-                    ))}
+            {isLoading ? (
+                <LoadingSpinner />
+            ) : error ? (
+                <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-center">
+                    <p className="text-red-600 font-medium">{error}</p>
+                    <button
+                        onClick={loadBookings}
+                        className="mt-4 px-4 py-2 rounded-lg bg-primary text-white"
+                    >
+                        Retry
+                    </button>
                 </div>
+            ) : filtered.length > 0 ? (
+                <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                        {filtered.map((b) => (
+                            <BookingCard
+                                key={b.id}
+                                booking={b}
+                                onView={openView}
+                                onEdit={openEdit}
+                                onDelete={openDelete}
+                            />
+                        ))}
+                    </div>
+                    <Pagination
+                        currentPage={pageNumber}
+                        totalPages={Math.ceil(total / pageSize)}
+                        onPageChange={setPageNumber}
+                        isLoading={isLoading}
+                    />
+                </>
             ) : (
                 <div className="bg-card border border-border rounded-3xl p-12 text-center shadow-card max-w-xl mx-auto">
                     <CalendarX2 className="w-16 h-16 text-muted/50 mx-auto stroke-[1.5]" />
@@ -393,8 +318,6 @@ export default function BookingPage() {
                         onCancel={() => setIsAddOpen(false)}
                         submitLabel="Create Booking"
                         isEdit={false}
-                        drivers={DRIVERS}
-                        vehicles={vehicles}
                     />
                 </Modal>
             )}
@@ -413,15 +336,17 @@ export default function BookingPage() {
                         onCancel={() => setIsEditOpen(false)}
                         submitLabel="Save Changes"
                         isEdit={true}
-                        drivers={DRIVERS}
-                        vehicles={vehicles}
                     />
                 </Modal>
             )}
 
             {isDeleteOpen && (
                 <DeleteConfirmModal
-                    vehicle={{ model: selectedBooking?.booking_reference, registrationNumber: selectedBooking?.customer_name, brandId: "Booking" }}
+                    vehicle={{
+                        model: selectedBooking?.booking_reference,
+                        registrationNumber: selectedBooking?.customer_name,
+                        brandId: "Booking",
+                    }}
                     onConfirm={handleDelete}
                     onCancel={() => setIsDeleteOpen(false)}
                 />
