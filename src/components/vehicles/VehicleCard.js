@@ -1,13 +1,18 @@
 import React from "react";
 import { Edit2, Trash2, Fuel, Thermometer, Wifi, MapPin } from "lucide-react";
+import { getTransmissionType } from "../../utilities/EnumHelper";
+import { getFuelLabel, getVehicleStatusLabel } from "../../utils/VehicleEnums";
 
 const STATUS_STYLES = {
     Available: "bg-emerald-50 text-emerald-700 border-emerald-200/60",
-    Rented: "bg-amber-50 text-amber-700 border-amber-200/60",
+    Booked: "bg-amber-50 text-amber-700 border-amber-200/60",
     Maintenance: "bg-rose-50 text-rose-700 border-rose-200/60",
+    Unavailable: "bg-slate-100 text-slate-700 border-slate-200/60",
 };
 
 function VehicleCard({ vehicle, onEdit, onDelete }) {
+    const statusLabel = getVehicleStatusLabel(vehicle.status);
+
     return (
         <div className="group bg-card border border-border rounded-3xl overflow-hidden shadow-card hover:shadow-soft transition-all duration-300 flex flex-col">
             {/* Image Section */}
@@ -18,13 +23,13 @@ function VehicleCard({ vehicle, onEdit, onDelete }) {
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
                 <span
-                    className={`absolute top-4 right-4 px-3.5 py-1.5 rounded-full border text-xs font-bold shadow-sm ${STATUS_STYLES[vehicle.status] ?? STATUS_STYLES.Available
+                    className={`absolute top-4 right-4 px-3.5 py-1.5 rounded-full border text-xs font-bold shadow-sm ${STATUS_STYLES[statusLabel] ?? STATUS_STYLES.Available
                         }`}
                 >
-                    {vehicle.status}
+                    {statusLabel}
                 </span>
                 <span className="absolute bottom-4 left-4 bg-secondary/80 backdrop-blur-md text-white px-3 py-1 rounded-lg text-xs font-semibold">
-                    {vehicle.typeId.replace(/_/g, " ").replace("type ", "")}
+                    {vehicle.type.name}
                 </span>
             </div>
 
@@ -35,7 +40,7 @@ function VehicleCard({ vehicle, onEdit, onDelete }) {
                     <div className="flex items-start justify-between">
                         <div>
                             <h3 className="text-xl font-bold text-secondary tracking-tight">
-                                {vehicle.brandId.replace(/_/g, " ").replace("brand ", "")} {vehicle.model}
+                                {vehicle.brand.name} {vehicle.model}
                             </h3>
                             <p className="text-sm text-muted mt-0.5">
                                 {vehicle.manufactureYear} · {vehicle.color}
@@ -54,7 +59,7 @@ function VehicleCard({ vehicle, onEdit, onDelete }) {
                             {vehicle.registrationNumber}
                         </div>
                         <div className="text-muted flex items-center gap-1">
-                            <Fuel className="w-3.5 h-3.5" /> {vehicle.fuel}
+                            <Fuel className="w-3.5 h-3.5" /> {getFuelLabel(vehicle.fuel)}
                         </div>
                         <div className="text-muted">
                             <span className="font-semibold text-secondary-light">Seats: </span>
@@ -66,7 +71,7 @@ function VehicleCard({ vehicle, onEdit, onDelete }) {
                         </div>
                         <div className="text-muted">
                             <span className="font-semibold text-secondary-light">Trans: </span>
-                            {vehicle.transmission}
+                            {getTransmissionType(vehicle.transmission)}
                         </div>
                         <div className="text-muted">
                             <span className="font-semibold text-secondary-light">$/km: </span>

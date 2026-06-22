@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Thermometer, Wifi, MapPin } from "lucide-react";
 import ImageUploader from "../common/ImageUploader";
+import { getAllVehicleBrands, getAllVehicleTypes } from "../../services/VehicelService";
 
 const Label = ({ children, required }) => (
     <label className="block text-sm font-semibold text-secondary-light mb-1">
@@ -47,16 +48,49 @@ const TogglePill = ({ icon: Icon, label, checked, onChange }) => (
 );
 
 function VehicleForm({ formData, setFormData, formErrors, onSubmit, onCancel, submitLabel }) {
-    const handleAddImage = (dataUrl) => {
+
+    const [brands, setBrands] = React.useState([]);
+    const [types, setTypes] = React.useState([]);
+    const [images, setImages] = React.useState([]);
+
+    useEffect(() => {
+        loadBrands();
+        loadTypes();
+    }, []);
+
+    const loadBrands = async () => {
+        try {
+            const data = await getAllVehicleBrands();
+            console.log("Loaded brands:", data);
+            setBrands(data);
+        } catch (error) {
+            console.error("Failed to load vehicle brands:", error);
+        }
+    }
+
+    const loadTypes = async () => {
+        try {
+            const data = await getAllVehicleTypes();
+            setTypes(data);
+        } catch (error) {
+            console.error("Failed to load vehicle types:", error);
+        }
+    }
+
+    const handleAddImage = (image, previewUrl) => {
         if (formData.imagePreviews.length >= 5) return;
+
+        setImages((prev) => [...prev, image]);
+
         setFormData((prev) => ({
             ...prev,
-            imagePreviews: [...prev.imagePreviews, dataUrl],
-            mainImageUrl: prev.imagePreviews.length === 0 ? dataUrl : prev.mainImageUrl,
+            imagePreviews: [...prev.imagePreviews, previewUrl],
+            mainImageUrl: prev.imagePreviews.length === 0 ? previewUrl : prev.mainImageUrl,
         }));
     };
 
     const handleRemoveImage = (idx) => {
+        setImages((prev) => prev.filter((_, i) => i !== idx));
         setFormData((prev) => {
             const newPreviews = prev.imagePreviews.filter((_, i) => i !== idx);
             return {
@@ -73,29 +107,75 @@ function VehicleForm({ formData, setFormData, formErrors, onSubmit, onCancel, su
     const setCheck = (field) => (val) =>
         setFormData((prev) => ({ ...prev, [field]: val }));
 
+    const getBrandValue = () => {
+        if (formData.brandId) return formData.brandId;
+        if (formData.brand?.id) return formData.brand.id;
+        return "";
+    };
+
+    const getTypeValue = () => {
+        if (formData.typeId) return formData.typeId;
+        if (formData.type?.id) return formData.type.id;
+        return "";
+    };
+
+    const handleBrandChange = (e) => {
+        const value = Number(e.target.value);
+
+        setFormData((prev) => ({
+            ...prev,
+            brandId: value,
+            brand: brands.find((b) => b.id === value) || null,
+        }));
+    };
+
+    const handleTypeChange = (e) => {
+        const value = Number(e.target.value);
+
+        setFormData((prev) => ({
+            ...prev,
+            typeId: value,
+            type: types.find((t) => t.id === value) || null,
+        }));
+    };
+
     return (
         <>
             <form id="vehicle-form" onSubmit={onSubmit} className="overflow-y-auto p-6 space-y-6 flex-1">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <Label required>Brand</Label>
-                        <Field
-                            type="text"
-                            placeholder="e.g. brand_tesla"
-                            value={formData.brandId}
-                            onChange={set("brandId")}
+
+                        <Select
+                            value={getBrandValue()}
+                            onChange={handleBrandChange}
                             error={formErrors.brandId}
-                        />
+                        >
+                            <option value="">Select Brand</option>
+
+                            {brands.map((brand) => (
+                                <option key={brand.id} value={brand.id}>
+                                    {brand.name}
+                                </option>
+                            ))}
+                        </Select>
                     </div>
                     <div>
                         <Label required>Type</Label>
-                        <Field
-                            type="text"
-                            placeholder="e.g. type_suv"
-                            value={formData.typeId}
-                            onChange={set("typeId")}
+
+                        <Select
+                            value={getTypeValue()}
+                            onChange={handleTypeChange}
                             error={formErrors.typeId}
-                        />
+                        >
+                            <option value="">Select Type</option>
+
+                            {types.map((type) => (
+                                <option key={type.id} value={type.id}>
+                                    {type.name}
+                                </option>
+                            ))}
+                        </Select>
                     </div>
                     <div>
                         <Label required>Model</Label>
@@ -277,6 +357,7 @@ function VehicleForm({ formData, setFormData, formErrors, onSubmit, onCancel, su
                 <button
                     type="submit"
                     form="vehicle-form"
+                    onClick= {onSubmit}
                     className="px-6 py-2.5 rounded-xl bg-cta-gradient text-white font-semibold shadow-glow hover:opacity-95 transition"
                 >
                     {submitLabel}
