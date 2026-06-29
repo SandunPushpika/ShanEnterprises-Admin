@@ -20,12 +20,6 @@ export default function HeaderComponent({ isOpen, setIsOpen }) {
             </div>
 
             <div className="flex items-center gap-3">
-                {/* Notification */}
-                <button className="w-12 h-12 rounded-2xl bg-white border border-border flex items-center justify-center relative shadow-soft">
-                    <Bell className="w-5 h-5 text-secondary" />
-
-                    <span className="absolute top-3 right-3 w-2 h-2 bg-danger rounded-full"></span>
-                </button>
 
                 {/* Profile */}
                 <div className="flex items-center gap-3 bg-white border border-border rounded-2xl px-3 py-2 shadow-soft">
