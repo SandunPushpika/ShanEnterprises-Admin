@@ -1,8 +1,21 @@
 import React, { useState } from "react";
 import CustomerStats from "../components/Customer/CustomerStats";
-import CustomerSearch from "../components/Customer/CustomerSearch";
 import CustomerList from "../components/Customer/CustomerList";
 import CustomerViewModal from "../components/Customer/CustomerViewModal";
+import SearchBar from "../components/common/Searchbar";
+import { UserX } from "lucide-react";
+
+const TABS = ["ALL", "ACTIVE", "INACTIVE"];
+const TAB_LABELS = {
+    ALL: "All Customers",
+    ACTIVE: "Active",
+    INACTIVE: "Inactive",
+};
+const PILL_ACTIVE = {
+    ALL: "bg-secondary text-white border-secondary",
+    ACTIVE: "bg-emerald-600 text-white border-emerald-600",
+    INACTIVE: "bg-rose-600 text-white border-rose-600",
+};
 
 function CustomersPage() {
     const [selectedCustomer, setSelectedCustomer] = useState(null);
@@ -88,30 +101,70 @@ function CustomersPage() {
     });
 
     return (
-        <div className="p-8 min-h-screen bg-surface">
-
-            <div className="mb-6">
-                <h1 className="text-4xl font-bold text-secondary">
-                    Customers
-                </h1>
-                <p className="text-muted mt-2">
-                    Manage customer accounts and profiles
-                </p>
+        <div className="p-4 md:p-8 min-h-[calc(100vh-80px)] space-y-8 bg-surface">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-3xl font-extrabold text-secondary tracking-tight font-display">
+                        Customers
+                    </h1>
+                    <p className="text-muted text-sm mt-1">
+                        Manage customer accounts and profiles
+                    </p>
+                </div>
             </div>
 
+            {/* Dynamic Statistics Cards */}
             <CustomerStats customers={customers} />
 
-            <CustomerSearch
-                searchTerm={searchTerm}
-                setSearchTerm={setSearchTerm}
-                statusFilter={statusFilter}
-                setStatusFilter={setStatusFilter}
-            />
+            {/* Search and Filters */}
+            <div className="space-y-3">
+                <SearchBar
+                    searchQuery={searchTerm}
+                    setSearchQuery={setSearchTerm}
+                    placeholder="Search customers by name, email, or phone..."
+                />
 
-            <CustomerList
-                customers={filteredCustomers}
-                onView={setSelectedCustomer}
-            />
+                {/* Status Tabs */}
+                <div className="flex flex-wrap gap-2">
+                    {TABS.map((tab) => (
+                        <button
+                            key={tab}
+                            onClick={() => setStatusFilter(tab)}
+                            className={`px-4 py-1.5 rounded-full border text-xs font-bold transition ${statusFilter === tab
+                                ? PILL_ACTIVE[tab]
+                                : "bg-white border-border text-secondary hover:bg-slate-50"
+                                }`}
+                        >
+                            {TAB_LABELS[tab]}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* Customer List or Empty State */}
+            {filteredCustomers.length > 0 ? (
+                <CustomerList
+                    customers={filteredCustomers}
+                    onView={setSelectedCustomer}
+                />
+            ) : (
+                <div className="bg-card border border-border rounded-3xl p-12 text-center shadow-card max-w-xl mx-auto mt-6">
+                    <UserX className="w-16 h-16 text-muted/50 mx-auto stroke-[1.5]" />
+                    <h3 className="text-xl font-bold text-secondary mt-5">No Customers Found</h3>
+                    <p className="text-muted text-sm mt-2">
+                        No customers match &ldquo;{searchTerm}&rdquo; in the {TAB_LABELS[statusFilter]} tab.
+                    </p>
+                    {searchTerm && (
+                        <button
+                            onClick={() => setSearchTerm("")}
+                            className="mt-6 px-5 py-2.5 rounded-xl border border-border text-secondary hover:bg-slate-50 font-semibold transition"
+                        >
+                            Clear Search
+                        </button>
+                    )}
+                </div>
+            )}
 
             {selectedCustomer && (
                 <CustomerViewModal
@@ -119,7 +172,6 @@ function CustomersPage() {
                     onClose={() => setSelectedCustomer(null)}
                 />
             )}
-
         </div>
     );
 }
