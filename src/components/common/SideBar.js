@@ -9,7 +9,6 @@ import {
 } from "lucide-react";
 
 import { NavLink } from "react-router-dom";
-import useAuth from "../../hooks/useAuth";
 
 const navItems = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/" },
@@ -19,9 +18,7 @@ const navItems = [
     { icon: Users, label: "Customers", path: "/customers" },
 ];
 
-export default function SideBar({ isOpen, setIsOpen }) {
-
-    const auth = useAuth();
+export default function SideBar({ isOpen, setIsOpen, onLogoutClick }) {
 
     return (
         <>
@@ -90,9 +87,7 @@ export default function SideBar({ isOpen, setIsOpen }) {
                 <div className="p-4 border-t border-border">
                     <button
                         className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-red-500 hover:bg-red-500/10 transition"
-                        onClick={() => {
-                            auth.logoutUser();
-                        }}
+                        onClick={onLogoutClick}
                     >
                         <LogOut className="w-5 h-5" />
                         Logout

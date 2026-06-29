@@ -6,35 +6,35 @@ import {
     FaUserTimes,
 } from "react-icons/fa";
 
-function DriverStats() {
+function DriverStats({ total = 0, pending = 0, approved = 0, blocked = 0 }) {
     const stats = [
         {
             title: "Total Drivers",
-            value: 24,
+            value: total,
             icon: <FaUserTie size={24} />,
-            bg: "bg-blue-100",
+            bg: "bg-blue-50 border border-blue-100",
             color: "text-blue-600",
         },
         {
             title: "Pending Approval",
-            value: 8,
+            value: pending,
             icon: <FaHourglassHalf size={24} />,
-            bg: "bg-yellow-100",
-            color: "text-yellow-600",
+            bg: "bg-amber-50 border border-amber-100",
+            color: "text-amber-600",
         },
         {
             title: "Approved",
-            value: 14,
+            value: approved,
             icon: <FaUserCheck size={24} />,
-            bg: "bg-green-100",
-            color: "text-green-600",
+            bg: "bg-emerald-50 border border-emerald-100",
+            color: "text-emerald-600",
         },
         {
-            title: "Rejected",
-            value: 2,
+            title: "Blocked",
+            value: blocked,
             icon: <FaUserTimes size={24} />,
-            bg: "bg-red-100",
-            color: "text-red-600",
+            bg: "bg-rose-50 border border-rose-100",
+            color: "text-rose-600",
         },
     ];
 
@@ -43,21 +43,21 @@ function DriverStats() {
             {stats.map((item, index) => (
                 <div
                     key={index}
-                    className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition"
+                    className="bg-card rounded-3xl border border-border p-6 shadow-card hover:shadow-soft transition-all duration-300"
                 >
                     <div className="flex justify-between items-center">
                         <div>
-                            <p className="text-gray-500 text-sm">
+                            <p className="text-muted text-sm font-semibold tracking-wide uppercase text-xs">
                                 {item.title}
                             </p>
 
-                            <h2 className="text-3xl font-bold mt-2">
+                            <h2 className="text-3xl font-extrabold text-secondary mt-2">
                                 {item.value}
                             </h2>
                         </div>
 
                         <div
-                            className={`${item.bg} ${item.color} p-3 rounded-xl`}
+                            className={`${item.bg} ${item.color} p-3.5 rounded-2xl`}
                         >
                             {item.icon}
                         </div>
