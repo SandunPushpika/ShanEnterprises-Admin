@@ -25,3 +25,37 @@ export const getAllBookings = async ({
         throw error;
     }
 };
+
+export const cancelBooking = async (bookingId) => {
+    try {
+        const response = await axiosInstance.delete(
+            `${bookingEndpoint}/${bookingId}`
+        );
+
+        if (!response.data.success) {
+            throw new Error(response.data.message || "Failed to cancel booking");
+        }
+
+        return response.data.data;
+    } catch (error) {
+        console.error("BookingService.cancelBooking:", error);
+        throw error;
+    }
+}
+
+export const completeBooking = async (bookingId) => {
+    try {
+        const response = await axiosInstance.get(
+            `${bookingEndpoint}/${bookingId}/complete`
+        );
+
+        if (!response.data.success) {
+            throw new Error(response.data.message || "Failed to complete booking");
+        }
+
+        return response.data.data;
+    } catch (error) {
+        console.error("BookingService.completeBooking:", error);
+        throw error;
+    }
+}

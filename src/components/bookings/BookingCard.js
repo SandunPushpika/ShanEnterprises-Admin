@@ -1,5 +1,5 @@
 import React from "react";
-import { Eye, Edit2, Trash2, Calendar, User, Car, DollarSign } from "lucide-react";
+import { Eye, Trash2, Calendar, User, Car, DollarSign, CheckCircle } from "lucide-react";
 
 const STATUS_STYLES = {
     PENDING: "bg-amber-50  text-amber-700  border-amber-200/60",
@@ -15,7 +15,9 @@ function fmtDate(dt) {
     });
 }
 
-function BookingCard({ booking, onView, onEdit, onDelete }) {
+function BookingCard({ booking, onView, onCancel, onComplete }) {
+    const isActionable = booking.booking_status !== "CANCELLED" && booking.booking_status !== "COMPLETED";
+
     return (
         <div className="group bg-card border border-border rounded-3xl overflow-hidden shadow-card hover:shadow-soft transition-all duration-300 flex flex-col">
 
@@ -52,30 +54,43 @@ function BookingCard({ booking, onView, onEdit, onDelete }) {
             </div>
 
             <div className="px-6 pb-6 pt-0 flex items-center gap-2">
-                <button
-                    onClick={() => onView(booking)}
-                    className="flex-1 inline-flex items-center justify-center gap-2 h-10 rounded-xl border border-primary/30 bg-primary-light text-primary hover:bg-primary/10 font-semibold text-sm transition"
-                    aria-label={`View booking ${booking.booking_reference}`}
-                >
-                    <Eye className="w-4 h-4" />
-                    View
-                </button>
-                <button
-                    onClick={() => onEdit(booking)}
-                    className="flex-1 inline-flex items-center justify-center gap-2 h-10 rounded-xl border border-border text-secondary hover:bg-slate-50 font-semibold text-sm transition"
-                    aria-label={`Edit booking ${booking.booking_reference}`}
-                >
-                    <Edit2 className="w-4 h-4" />
-                    Edit
-                </button>
-                <button
-                    onClick={() => onDelete(booking)}
-                    className="w-10 h-10 inline-flex items-center justify-center rounded-xl border border-rose-200/50 bg-rose-50 text-rose-600 hover:bg-rose-100 transition"
-                    aria-label={`Delete booking ${booking.booking_reference}`}
-                    title={`Delete booking ${booking.booking_reference}`}
-                >
-                    <Trash2 className="w-4 h-4" />
-                </button>
+                {isActionable ? (
+                    <>
+                        <button
+                            onClick={() => onView(booking)}
+                            className="flex-1 inline-flex items-center justify-center gap-2 h-10 rounded-xl border border-primary/30 bg-primary-light text-primary hover:bg-primary/10 font-semibold text-sm transition"
+                            aria-label={`View booking ${booking.booking_reference}`}
+                        >
+                            <Eye className="w-4 h-4" />
+                            View
+                        </button>
+                        <button
+                            onClick={() => onComplete(booking)}
+                            className="flex-1 inline-flex items-center justify-center gap-2 h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm shadow-md transition"
+                            aria-label={`Complete booking ${booking.booking_reference}`}
+                        >
+                            <CheckCircle className="w-4 h-4" />
+                            Complete
+                        </button>
+                        <button
+                            onClick={() => onCancel(booking)}
+                            className="w-10 h-10 inline-flex items-center justify-center rounded-xl border border-rose-200/50 bg-rose-50 text-rose-600 hover:bg-rose-100 transition shrink-0"
+                            aria-label={`Cancel booking ${booking.booking_reference}`}
+                            title={`Cancel booking ${booking.booking_reference}`}
+                        >
+                            <Trash2 className="w-4 h-4" />
+                        </button>
+                    </>
+                ) : (
+                    <button
+                        onClick={() => onView(booking)}
+                        className="w-full inline-flex items-center justify-center gap-2 h-10 rounded-xl border border-primary/30 bg-primary-light text-primary hover:bg-primary/10 font-semibold text-sm transition"
+                        aria-label={`View booking ${booking.booking_reference}`}
+                    >
+                        <Eye className="w-4 h-4" />
+                        View Booking Details
+                    </button>
+                )}
             </div>
         </div>
     );

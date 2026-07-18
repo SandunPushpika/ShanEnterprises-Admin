@@ -155,12 +155,6 @@ function BookingDetailModal({ booking, onClose, onEdit }) {
                     >
                         Close
                     </button>
-                    <button
-                        onClick={() => { onClose(); onEdit(booking); }}
-                        className="px-6 py-2.5 rounded-xl bg-cta-gradient text-white font-semibold shadow-glow hover:opacity-95 transition"
-                    >
-                        Edit Booking
-                    </button>
                 </div>
             </div>
         </div>,

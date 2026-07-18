@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Plus, CalendarX2 } from "lucide-react";
+import { Plus, CalendarX2, CheckCircle, AlertTriangle } from "lucide-react";
 import Modal from "../components/common/Modal";
 import Toast from "../components/common/Toast";
 import SearchBar from "../components/common/Searchbar";
-import DeleteConfirmModal from "../components/common/DeleteConfirmModal";
+import ConfirmModal from "../components/common/ConfirmModal";
 import BookingStatsBar from "../components/bookings/BookingStatsBar";
 import BookingCard from "../components/bookings/BookingCard";
 import BookingForm from "../components/bookings/BookingForm";
 import BookingDetailModal from "../components/bookings/BookingDetailModal";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import Pagination from "../components/common/Pagination";
-import { getAllBookings } from "../services/BookingService";
+import { getAllBookings, cancelBooking, completeBooking } from "../services/BookingService";
 
 const BLANK_FORM = {
     customer_name: "",
@@ -76,7 +76,8 @@ export default function BookingPage() {
     const [isViewOpen, setIsViewOpen] = useState(false);
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
-    const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+    const [isCancelOpen, setIsCancelOpen] = useState(false);
+    const [isCompleteOpen, setIsCompleteOpen] = useState(false);
     const [viewedBooking, setViewedBooking] = useState(null);
     const [selectedBooking, setSelectedBooking] = useState(null);
     const [formData, setFormData] = useState(BLANK_FORM);
@@ -175,13 +176,48 @@ export default function BookingPage() {
         loadBookings();
     };
 
-    const openDelete = (booking) => { setSelectedBooking(booking); setIsDeleteOpen(true); };
+    const openCancel = (booking) => {
+        setSelectedBooking(booking);
+        setIsCancelOpen(true);
+    };
 
-    const handleDelete = () => {
-        setIsDeleteOpen(false);
-        showToast(`Booking ${selectedBooking.booking_reference} removed.`, "error");
-        setSelectedBooking(null);
-        loadBookings();
+    const handleCancelConfirm = async () => {
+        if (!selectedBooking) return;
+        try {
+            setIsLoading(true);
+            await cancelBooking(selectedBooking.id);
+            showToast(`Booking ${selectedBooking.booking_reference} cancelled successfully.`, "success");
+            setIsCancelOpen(false);
+            setSelectedBooking(null);
+            loadBookings();
+        } catch (err) {
+            const message = err.response?.data?.message || err.message || "Failed to cancel booking";
+            showToast(message, "error");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const openComplete = (booking) => {
+        setSelectedBooking(booking);
+        setIsCompleteOpen(true);
+    };
+
+    const handleCompleteConfirm = async () => {
+        if (!selectedBooking) return;
+        try {
+            setIsLoading(true);
+            await completeBooking(selectedBooking.id);
+            showToast(`Booking ${selectedBooking.booking_reference} completed successfully.`, "success");
+            setIsCompleteOpen(false);
+            setSelectedBooking(null);
+            loadBookings();
+        } catch (err) {
+            const message = err.response?.data?.message || err.message || "Failed to complete booking";
+            showToast(message, "error");
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const STATUS_PILLS = ["ALL", "PENDING", "CONFIRMED", "COMPLETED", "CANCELLED"];
@@ -266,8 +302,8 @@ export default function BookingPage() {
                                 key={b.id}
                                 booking={b}
                                 onView={openView}
-                                onEdit={openEdit}
-                                onDelete={openDelete}
+                                onCancel={openCancel}
+                                onComplete={openComplete}
                             />
                         ))}
                     </div>
@@ -340,17 +376,35 @@ export default function BookingPage() {
                 </Modal>
             )}
 
-            {isDeleteOpen && (
-                <DeleteConfirmModal
-                    vehicle={{
-                        model: selectedBooking?.booking_reference,
-                        registrationNumber: selectedBooking?.customer_name,
-                        brandId: "Booking",
-                    }}
-                    onConfirm={handleDelete}
-                    onCancel={() => setIsDeleteOpen(false)}
-                />
-            )}
+            <ConfirmModal
+                isOpen={isCompleteOpen}
+                title="Complete Booking?"
+                message={`Are you sure you want to mark booking "${selectedBooking?.booking_reference}" for ${selectedBooking?.customer_name} as COMPLETED?`}
+                confirmLabel="Yes, Complete"
+                cancelLabel="Cancel"
+                onConfirm={handleCompleteConfirm}
+                onCancel={() => {
+                    setIsCompleteOpen(false);
+                    setSelectedBooking(null);
+                }}
+                icon={CheckCircle}
+                variant="success"
+            />
+
+            <ConfirmModal
+                isOpen={isCancelOpen}
+                title="Cancel Booking?"
+                message={`Are you sure you want to cancel booking "${selectedBooking?.booking_reference}" for ${selectedBooking?.customer_name}? This action cannot be undone.`}
+                confirmLabel="Yes, Cancel"
+                cancelLabel="Keep Booking"
+                onConfirm={handleCancelConfirm}
+                onCancel={() => {
+                    setIsCancelOpen(false);
+                    setSelectedBooking(null);
+                }}
+                icon={AlertTriangle}
+                variant="danger"
+            />
         </div>
     );
 }
