@@ -1,7 +1,7 @@
 import React from "react";
 import CustomerCard from "./CustomerCard";
 
-function CustomerList({ customers, onView }) {
+function CustomerList({ customers, onView, onActivate, onDeactivate }) {
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {customers.map((customer) => (
@@ -9,6 +9,8 @@ function CustomerList({ customers, onView }) {
                     key={customer.id}
                     customer={customer}
                     onView={onView}
+                    onActivate={onActivate}
+                    onDeactivate={onDeactivate}
                 />
             ))}
         </div>

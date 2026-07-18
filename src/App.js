@@ -12,6 +12,7 @@ import RegisterPage from './pages/RegisterPage';
 import ProtectedRoute from './auth/ProtectedRoute';
 import AuthProvider from './context/AuthProvider';
 import DriversPage from "./pages/DriversPage";
+import VehicleMaintenancePage from './pages/VehicleMaintenancePage';
 
 function App() {
   return (
@@ -21,14 +22,15 @@ function App() {
           <Route path="register" element={<RegisterPage />} />
           <Route path="login" element={<LoginPage />} />
           <Route path="/" element={<ProtectedRoute />}>
-          <Route element={<DashboardLayout />}>
-            <Route index element={<Main />} />
-            <Route path="drivers" element={<DriverPage />} />
-            <Route path="vehicles" element={<VehiclePage />} />
-            <Route path="customers" element={<CustomersPage />} />
-            <Route path="bookings" element={<BookingPage />} />
-            <Route path="/drivers" element={<DriversPage />} />
-          </Route>
+            <Route element={<DashboardLayout />}>
+              <Route index element={<Main />} />
+              <Route path="drivers" element={<DriverPage />} />
+              <Route path="vehicles" element={<VehiclePage />} />
+              <Route path="customers" element={<CustomersPage />} />
+              <Route path="bookings" element={<BookingPage />} />
+              <Route path="/drivers" element={<DriversPage />} />
+              <Route path="/vehicle-maintenance" element={<VehicleMaintenancePage />} />
+            </Route>
           </Route>
         </Routes>
       </Router>

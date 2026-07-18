@@ -1,7 +1,7 @@
 import React from "react";
-import { Eye, Phone, MapPin, Mail } from "lucide-react";
+import { Eye, Phone, MapPin, Mail, UserCheck, UserX } from "lucide-react";
 
-function CustomerCard({ customer, onView }) {
+function CustomerCard({ customer, onView, onActivate, onDeactivate }) {
     const isActive = customer.status === "ACTIVE";
     const isInactive = customer.status === "INACTIVE";
 
@@ -26,13 +26,12 @@ function CustomerCard({ customer, onView }) {
                 </div>
 
                 <span
-                    className={`px-3 py-1 rounded-full text-xs font-bold border shadow-sm ${
-                        isActive
+                    className={`px-3 py-1 rounded-full text-xs font-bold border shadow-sm ${isActive
                             ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                             : isInactive
-                            ? "bg-amber-50 text-amber-700 border-amber-200"
-                            : "bg-rose-50 text-rose-700 border-rose-200"
-                    }`}
+                                ? "bg-amber-50 text-amber-700 border-amber-200"
+                                : "bg-rose-50 text-rose-700 border-rose-200"
+                        }`}
                 >
                     {customer.status}
                 </span>
@@ -56,12 +55,32 @@ function CustomerCard({ customer, onView }) {
             <div className="flex gap-2.5 mt-5 pt-4 border-t border-border/60">
                 <button
                     onClick={() => onView && onView(customer)}
-                    className="w-full inline-flex items-center justify-center gap-1.5 h-10 rounded-xl border border-primary/30 bg-primary-light text-primary hover:bg-primary/10 font-semibold text-xs transition active:scale-[0.98]"
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 h-10 rounded-xl border border-primary/30 bg-primary-light text-primary hover:bg-primary/10 font-semibold text-xs transition active:scale-[0.98]"
                     aria-label={`View ${customer.firstName}`}
                 >
                     <Eye className="w-4 h-4" />
                     View Profile
                 </button>
+
+                {isActive ? (
+                    <button
+                        onClick={() => onDeactivate && onDeactivate(customer.id)}
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 h-10 rounded-xl border border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100 font-semibold text-xs transition active:scale-[0.98]"
+                        aria-label={`Inactive ${customer.firstName}`}
+                    >
+                        <UserX className="w-4 h-4" />
+                        Inactive
+                    </button>
+                ) : (
+                    <button
+                        onClick={() => onActivate && onActivate(customer.id)}
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 h-10 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 font-semibold text-xs transition active:scale-[0.98]"
+                        aria-label={`Activate ${customer.firstName}`}
+                    >
+                        <UserCheck className="w-4 h-4" />
+                        Active
+                    </button>
+                )}
             </div>
         </div>
     );
