@@ -10,33 +10,52 @@ const AuthProvider = ({ children }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [tokenDetails, setTokenDetails] = useState();
 
-    const loginUser = async (email, password) => {
+    const logoutUser = () => {
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        setIsAuthenticated(false);
+        setTokenDetails(null);
+    }
 
+    const loginUser = async (email, password) => {
         const result = await login(email, password);
         if (result.success) {
-            setIsAuthenticated(true);
+            const values = decodedValues();
+            const role = values ? values["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] : null;
+            if (role === "ADMIN") {
+                setIsAuthenticated(true);
+                setTokenDetails(values);
+            } else {
+                logoutUser();
+                return {
+                    success: false,
+                    message: "Access denied. Only administrators are allowed."
+                };
+            }
         } else {
             setIsAuthenticated(false);
+            setTokenDetails(null);
         }
 
         return result;
     }
 
-    const logoutUser = () => {
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("refreshToken");
-        setIsAuthenticated(false);
-    }
-
     useEffect(() => {
-
         const tokens = getStoredToken();
-        setIsAuthenticated(!!tokens);
-
         const values = decodedValues();
-        setTokenDetails(values);
-        setIsLoading(false);
 
+        if (tokens && values) {
+            const role = values["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
+            if (role === "ADMIN") {
+                setIsAuthenticated(true);
+                setTokenDetails(values);
+            } else {
+                logoutUser();
+            }
+        } else {
+            logoutUser();
+        }
+        setIsLoading(false);
     }, []);
 
     return (

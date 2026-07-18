@@ -233,7 +233,7 @@ function VehicleForm({ formData, setFormData, formErrors, onSubmit, onCancel, su
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <Label required>Daily Rental Price ($)</Label>
+                        <Label required>Daily Rental Price (LKR)</Label>
                         <Field
                             type="number"
                             placeholder="e.g. 150"
@@ -243,7 +243,7 @@ function VehicleForm({ formData, setFormData, formErrors, onSubmit, onCancel, su
                         />
                     </div>
                     <div>
-                        <Label required>Price per Km ($)</Label>
+                        <Label required>Price per Km (LKR)</Label>
                         <Field
                             type="number"
                             step="0.01"

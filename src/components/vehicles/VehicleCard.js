@@ -47,7 +47,7 @@ function VehicleCard({ vehicle, onEdit, onDelete }) {
                             </p>
                         </div>
                         <div className="text-right">
-                            <span className="text-2xl font-black text-primary">${vehicle.dailyRentalPrice}</span>
+                            <span className="text-2xl font-black text-primary">LKR {vehicle.dailyRentalPrice}</span>
                             <span className="text-xs font-medium text-muted block">/day</span>
                         </div>
                     </div>
@@ -75,7 +75,7 @@ function VehicleCard({ vehicle, onEdit, onDelete }) {
                         </div>
                         <div className="text-muted">
                             <span className="font-semibold text-secondary-light">$/km: </span>
-                            ${vehicle.pricePerKm}
+                            LKR {vehicle.pricePerKm}
                         </div>
                     </div>
 

@@ -21,7 +21,7 @@ export default function VehiclePricing({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <Label htmlFor="dailyRentalPrice" required>
-                        Daily Rental Price ($)
+                        Daily Rental Price (LKR)
                     </Label>
                     <Input
                         id="dailyRentalPrice"
@@ -37,7 +37,7 @@ export default function VehiclePricing({
                 </div>
                 <div>
                     <Label htmlFor="pricePerKm" required>
-                        Price Per Km ($)
+                        Price Per Km (LKR)
                     </Label>
                     <Input
                         id="pricePerKm"
