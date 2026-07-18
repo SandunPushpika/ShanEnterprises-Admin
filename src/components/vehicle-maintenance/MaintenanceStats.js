@@ -1,7 +1,7 @@
 import React from "react";
 import { Wrench, CheckCircle, Clock, CreditCard } from "lucide-react";
 
-export default function MaintenanceStats({ records = [], globalStats, activeStatusFilter, onStatusFilterChange }) {
+export default function MaintenanceStats({ records = [], globalStats }) {
     const normalizeStatus = (status) => {
         if (status === 0 || status === "0" || status === "COMPLETED" || status === "Completed") return "Completed";
         if (status === 1 || status === "1" || status === "UNDER_MAINTENANCE" || status === "Under Maintenance") return "Under Maintenance";
@@ -11,78 +11,58 @@ export default function MaintenanceStats({ records = [], globalStats, activeStat
     const totalCount = globalStats ? globalStats.totalCount : records.length;
     const completedCount = globalStats ? globalStats.completedCount : records.filter((r) => normalizeStatus(r.status) === "Completed").length;
     const underMaintenanceCount = globalStats ? globalStats.underMaintenanceCount : records.filter((r) => normalizeStatus(r.status) === "Under Maintenance").length;
-    
+
     const totalCost = globalStats ? globalStats.totalCost : records.reduce((sum, r) => sum + (Number(r.cost) || 0), 0);
 
     const stats = [
         {
-            title: "Total Expenses",
-            value: `LKR ${totalCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-            icon: <CreditCard size={24} />,
-            bg: "bg-blue-50 border border-blue-100",
-            color: "text-blue-600",
-            filterKey: "ALL",
-            ringColor: "ring-blue-400",
+            title: "Total Expenses (LKR)",
+            value: `${totalCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+            icon: CreditCard,
+            color: "text-blue-600 bg-blue-50",
+            textSize: "text-xl sm:text-2xl",
         },
         {
             title: "Maintenance Logs",
             value: totalCount,
-            icon: <Wrench size={24} />,
-            bg: "bg-amber-50 border border-amber-100",
-            color: "text-amber-600",
-            filterKey: "ALL",
-            ringColor: "ring-amber-400",
+            icon: Wrench,
+            color: "text-primary bg-primary-light",
         },
         {
             title: "Completed Services",
             value: completedCount,
-            icon: <CheckCircle size={24} />,
-            bg: "bg-emerald-50 border border-emerald-100",
-            color: "text-emerald-600",
-            filterKey: "Completed",
-            ringColor: "ring-emerald-400",
+            icon: CheckCircle,
+            color: "text-emerald-600 bg-emerald-50",
         },
         {
             title: "Under Maintenance",
             value: underMaintenanceCount,
-            icon: <Clock size={24} />,
-            bg: "bg-rose-50 border border-rose-100",
-            color: "text-rose-600",
-            filterKey: "Under Maintenance",
-            ringColor: "ring-rose-400",
+            icon: Clock,
+            color: "text-rose-600 bg-rose-50",
         },
     ];
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
             {stats.map((item, index) => {
-                const isActive = activeStatusFilter === item.filterKey;
+                const IconComponent = item.icon;
                 return (
-                    <button
+                    <div
                         key={index}
-                        type="button"
-                        onClick={() => onStatusFilterChange(item.filterKey)}
-                        className="bg-card rounded-3xl border border-border p-6 shadow-card hover:shadow-soft transition-all duration-300 text-left cursor-pointer"
+                        className="bg-card border border-border rounded-2xl p-5 shadow-card flex items-center justify-between hover:-translate-y-0.5 hover:shadow-soft transition-all duration-300"
                     >
-                        <div className="flex justify-between items-center">
-                            <div>
-                                    <p className="text-muted text-sm font-semibold tracking-wide uppercase">
-                                    {item.title}
-                                </p>
-                                <h2 className="text-3xl font-extrabold text-secondary mt-2">
-                                    {item.value}
-                                </h2>
-                            </div>
-                            <div className={`${item.bg} ${item.color} p-3.5 rounded-2xl`}>
-                                {item.icon}
-                            </div>
-                        </div>
-                        {isActive && item.filterKey !== "ALL" && (
-                            <p className="text-[10px] font-bold text-primary mt-2 uppercase tracking-wider">
-                                ● Filtering active
+                        <div className="flex-1 min-w-0 pr-3">
+                            <p className="text-xs font-semibold text-muted tracking-wider uppercase truncate">
+                                {item.title}
                             </p>
-                        )}
-                    </button>
+                            <h3 className={`${item.textSize || "text-3xl"} font-bold text-secondary mt-2 truncate`}>
+                                {item.value}
+                            </h3>
+                        </div>
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${item.color}`}>
+                            <IconComponent className="w-6 h-6" />
+                        </div>
+                    </div>
                 );
             })}
         </div>

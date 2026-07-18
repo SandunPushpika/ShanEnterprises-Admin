@@ -22,7 +22,6 @@ export default function VehicleMaintenancePage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedVehicleId, setSelectedVehicleId] = useState("ALL");
     const [selectedMonth, setSelectedMonth] = useState("ALL");
-    const [statusFilter, setStatusFilter] = useState("ALL"); // Interactive stats filter
 
     // Pagination State
     const [pageNumber, setPageNumber] = useState(1);
@@ -62,7 +61,7 @@ export default function VehicleMaintenancePage() {
                 vehicleId: selectedVehicleId !== "ALL" ? Number(selectedVehicleId) : null,
                 month: selectedMonth !== "ALL" ? Number(selectedMonth) : null,
                 year: null,
-                status: statusFilter === "Completed" ? "COMPLETED" : (statusFilter === "Under Maintenance" ? "UNDER_MAINTENANCE" : null),
+                status: null,
                 pageNumber,
                 pageSize,
             });
@@ -130,7 +129,7 @@ export default function VehicleMaintenancePage() {
 
     useEffect(() => {
         fetchRecords();
-    }, [pageNumber, selectedVehicleId, selectedMonth, statusFilter]);
+    }, [pageNumber, selectedVehicleId, selectedMonth]);
 
     const handleOpenAdd = () => {
         setSelectedRecord(null);
@@ -232,14 +231,14 @@ export default function VehicleMaintenancePage() {
             {isLoading && records.length === 0 ? (
                 <div className="space-y-6">
                     {/* Stats Boxes Skeleton */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
                         {[1, 2, 3, 4].map((i) => (
-                            <div key={i} className="bg-card rounded-3xl p-6 border border-border animate-pulse flex justify-between items-center h-24">
-                                <div className="space-y-2.5">
+                            <div key={i} className="bg-card rounded-2xl p-5 border border-border animate-pulse flex justify-between items-center h-24">
+                                <div className="space-y-2">
                                     <div className="h-3 bg-slate-200 rounded w-20"></div>
                                     <div className="h-6 bg-slate-200 rounded w-28"></div>
                                 </div>
-                                <div className="w-12 h-12 rounded-2xl bg-slate-200"></div>
+                                <div className="w-12 h-12 rounded-xl bg-slate-200"></div>
                             </div>
                         ))}
                     </div>
@@ -283,15 +282,10 @@ export default function VehicleMaintenancePage() {
                 </div>
             ) : (
                 <>
-                    {/* Interactive Stats Cards — click to filter by status */}
+                    {/* Stats Cards */}
                     <MaintenanceStats
                         records={records}
                         globalStats={globalStats}
-                        activeStatusFilter={statusFilter}
-                        onStatusFilterChange={(f) => {
-                            setPageNumber(1);
-                            setStatusFilter(f);
-                        }}
                     />
 
                     {/* Charts Row */}
@@ -347,7 +341,6 @@ export default function VehicleMaintenancePage() {
                                     setPageNumber(1);
                                     setSelectedVehicleId("ALL");
                                     setSelectedMonth("ALL");
-                                    setStatusFilter("ALL");
                                 }}
                                 className="mt-6 px-5 py-2.5 rounded-xl border border-border text-secondary hover:bg-slate-50 font-semibold transition active:scale-[0.98]"
                             >
