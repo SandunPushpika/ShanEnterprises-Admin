@@ -26,12 +26,14 @@ export const VEHICLE_STATUS = {
     0: "Available",
     1: "Booked",
     2: "Maintenance",
+    3: "Unavailable",
 };
 
 export const VEHICLE_STATUS_VALUES = {
     Available: 0,
     Booked: 1,
     Maintenance: 2,
+    Unavailable: 3,
 };
 
 export const getTransmissionLabel = (value) => {

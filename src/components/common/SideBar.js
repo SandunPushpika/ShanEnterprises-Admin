@@ -6,6 +6,7 @@ import {
     ClipboardCheck,
     LogOut,
     X,
+    Wrench
 } from "lucide-react";
 
 import { NavLink } from "react-router-dom";
@@ -16,6 +17,7 @@ const navItems = [
     { icon: CalendarCheck, label: "Bookings", path: "/bookings" },
     { icon: ClipboardCheck, label: "Drivers", path: "/drivers" },
     { icon: Users, label: "Customers", path: "/customers" },
+    { icon: Wrench, label: "Maintenance", path: "/vehicle-maintenance" },
 ];
 
 export default function SideBar({ isOpen, setIsOpen, onLogoutClick }) {

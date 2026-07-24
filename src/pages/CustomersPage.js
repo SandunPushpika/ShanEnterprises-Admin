@@ -17,73 +17,111 @@ const PILL_ACTIVE = {
     INACTIVE: "bg-rose-600 text-white border-rose-600",
 };
 
+const INITIAL_CUSTOMERS = [
+    {
+        id: 1,
+        firstName: "John",
+        lastName: "Smith",
+        email: "john@gmail.com",
+        phoneNumber: "+94 71 123 4567",
+        city: "Colombo",
+        address: "Main Street Colombo",
+        nicPassportNumber: "200145678901",
+        status: "ACTIVE",
+        emailVerified: true,
+        profileImageUrl: null,
+        createdAt: "2026-01-12",
+        updatedAt: "2026-05-20",
+    },
+    {
+        id: 2,
+        firstName: "Emma",
+        lastName: "Johnson",
+        email: "emma@gmail.com",
+        phoneNumber: "+94 77 987 6543",
+        city: "Kandy",
+        address: "Lake Road",
+        nicPassportNumber: "199945612345",
+        status: "ACTIVE",
+        emailVerified: true,
+        profileImageUrl: null,
+        createdAt: "2026-02-08",
+        updatedAt: "2026-04-15",
+    },
+    {
+        id: 3,
+        firstName: "Michael",
+        lastName: "Brown",
+        email: "michael@gmail.com",
+        phoneNumber: "+94 76 555 1122",
+        city: "Galle",
+        address: "Temple Street",
+        nicPassportNumber: "199812345678",
+        status: "INACTIVE",
+        emailVerified: false,
+        profileImageUrl: null,
+        createdAt: "2026-03-01",
+        updatedAt: "2026-05-10",
+    },
+    {
+        id: 4,
+        firstName: "Sarah",
+        lastName: "Wilson",
+        email: "sarah@gmail.com",
+        phoneNumber: "+94 70 555 6677",
+        city: "Matara",
+        address: "Flower Road",
+        nicPassportNumber: "200267890123",
+        status: "ACTIVE",
+        emailVerified: true,
+        profileImageUrl: null,
+        createdAt: "2026-03-18",
+        updatedAt: "2026-05-25",
+    },
+];
+
 function CustomersPage() {
+    const [customers, setCustomers] = useState(INITIAL_CUSTOMERS);
     const [selectedCustomer, setSelectedCustomer] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("ALL");
 
-    const customers = [
-        {
-            id: 1,
-            firstName: "John",
-            lastName: "Smith",
-            email: "john@gmail.com",
-            phoneNumber: "+94 71 123 4567",
-            city: "Colombo",
-            address: "Main Street Colombo",
-            nicPassportNumber: "200145678901",
-            status: "ACTIVE",
-            emailVerified: true,
-            profileImageUrl: null,
-            createdAt: "2026-01-12",
-            updatedAt: "2026-05-20",
-        },
-        {
-            id: 2,
-            firstName: "Emma",
-            lastName: "Johnson",
-            email: "emma@gmail.com",
-            phoneNumber: "+94 77 987 6543",
-            city: "Kandy",
-            address: "Lake Road",
-            nicPassportNumber: "199945612345",
-            status: "ACTIVE",
-            emailVerified: true,
-            profileImageUrl: null,
-            createdAt: "2026-02-08",
-            updatedAt: "2026-04-15",
-        },
-        {
-            id: 3,
-            firstName: "Michael",
-            lastName: "Brown",
-            email: "michael@gmail.com",
-            phoneNumber: "+94 76 555 1122",
-            city: "Galle",
-            address: "Temple Street",
-            nicPassportNumber: "199812345678",
-            status: "INACTIVE",
-            emailVerified: false,
-            profileImageUrl: null,
-            createdAt: "2026-03-01",
-            updatedAt: "2026-05-10",
-        },
-        {
-            id: 4,
-            firstName: "Sarah",
-            lastName: "Wilson",
-            email: "sarah@gmail.com",
-            phoneNumber: "+94 70 555 6677",
-            city: "Matara",
-            address: "Flower Road",
-            nicPassportNumber: "200267890123",
-            status: "ACTIVE",
-            emailVerified: true,
-            profileImageUrl: null,
-            createdAt: "2026-03-18",
-            updatedAt: "2026-05-25",
-        },
-    ];
+    // Handlers to modify customer status
+    const handleActivate = (id) => {
+        setCustomers((prev) =>
+            prev.map((c) =>
+                c.id === id
+                    ? {
+                          ...c,
+                          status: "ACTIVE",
+                          updatedAt: new Date().toISOString().split("T")[0],
+                      }
+                    : c
+            )
+        );
+        // Also update viewed customer modal state if open
+        setSelectedCustomer((prev) =>
+            prev && prev.id === id ? { ...prev, status: "ACTIVE" } : prev
+        );
+    };
+
+    const handleDeactivate = (id) => {
+        setCustomers((prev) =>
+            prev.map((c) =>
+                c.id === id
+                    ? {
+                          ...c,
+                          status: "INACTIVE",
+                          updatedAt: new Date().toISOString().split("T")[0],
+                      }
+                    : c
+            )
+        );
+        // Also update viewed customer modal state if open
+        setSelectedCustomer((prev) =>
+            prev && prev.id === id ? { ...prev, status: "INACTIVE" } : prev
+        );
+    };
 
     // Filtering
     const filteredCustomers = customers.filter((c) => {
@@ -131,10 +169,11 @@ function CustomersPage() {
                         <button
                             key={tab}
                             onClick={() => setStatusFilter(tab)}
-                            className={`px-4 py-1.5 rounded-full border text-xs font-bold transition ${statusFilter === tab
-                                ? PILL_ACTIVE[tab]
-                                : "bg-white border-border text-secondary hover:bg-slate-50"
-                                }`}
+                            className={`px-4 py-1.5 rounded-full border text-xs font-bold transition ${
+                                statusFilter === tab
+                                    ? PILL_ACTIVE[tab]
+                                    : "bg-white border-border text-secondary hover:bg-slate-50"
+                            }`}
                         >
                             {TAB_LABELS[tab]}
                         </button>
@@ -147,6 +186,8 @@ function CustomersPage() {
                 <CustomerList
                     customers={filteredCustomers}
                     onView={setSelectedCustomer}
+                    onActivate={handleActivate}
+                    onDeactivate={handleDeactivate}
                 />
             ) : (
                 <div className="bg-card border border-border rounded-3xl p-12 text-center shadow-card max-w-xl mx-auto mt-6">
