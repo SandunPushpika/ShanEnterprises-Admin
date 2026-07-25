@@ -5,21 +5,24 @@ import {
     IdCard,
     Calendar,
     Star,
-    Car,
     Clock,
     UserCheck,
     ShieldCheck,
-    Phone,
     Mail,
     Activity,
     CheckCircle2,
+    ExternalLink,
+    FileText,
+    Ban,
+    ShieldAlert,
+    Loader2,
 } from "lucide-react";
 
 const STATUS_STYLES = {
-    Approved:  "bg-emerald-50 text-emerald-700 border-emerald-200",
-    Pending:   "bg-amber-50   text-amber-700   border-amber-200",
-    Blocked:   "bg-rose-50    text-rose-700    border-rose-200",
-    Rejected:  "bg-rose-50    text-rose-700    border-rose-200",
+    Approved: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    Pending:  "bg-amber-50   text-amber-700   border-amber-200",
+    Blocked:  "bg-rose-50    text-rose-700    border-rose-200",
+    Rejected: "bg-rose-50    text-rose-700    border-rose-200",
 };
 
 function fmt(dt) {
@@ -59,11 +62,14 @@ function Section({ title, children }) {
     );
 }
 
-function DriverDetailModal({ driver, onClose }) {
+function DriverDetailModal({ driver, onClose, onApprove, onReject, actionLoading = {} }) {
     if (!driver) return null;
 
-    const statusStyle =
-        STATUS_STYLES[driver.status] ?? STATUS_STYLES.Pending;
+    const statusStyle = STATUS_STYLES[driver.status] ?? STATUS_STYLES.Pending;
+    const isPending   = driver.status === "Pending";
+    const isApproved  = driver.status === "Approved";
+    const isBlocked   = driver.status === "Blocked";
+    const isLoading   = !!actionLoading[driver.id];
 
     return createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center">
@@ -116,19 +122,60 @@ function DriverDetailModal({ driver, onClose }) {
                     {/* Contact */}
                     <Section title="Contact Information">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <Row icon={Phone} label="Phone"       value={driver.phone} />
-                            <Row icon={Mail}  label="Email"       value={driver.email} />
+                            <Row icon={Mail} label="Email" value={driver.email} />
                         </div>
                     </Section>
 
                     {/* License */}
                     <Section title="License Details">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <Row icon={IdCard}    label="License Number"      value={driver.license} />
-                            <Row icon={Calendar}  label="License Expiry Date" value={fmt(driver.license_expiry_date)} />
-                            <Row icon={Clock}     label="Years of Experience" value={driver.years_of_experience != null ? `${driver.years_of_experience} yr${driver.years_of_experience !== 1 ? "s" : ""}` : null} />
-                            <Row icon={CheckCircle2} label="License Document" value={driver.license_document_url ? "Uploaded ✓" : "Not uploaded"} />
+                            <Row icon={IdCard}       label="License Number"      value={driver.license} />
+                            <Row icon={Calendar}     label="License Expiry Date" value={fmt(driver.license_expiry_date)} />
+                            <Row icon={Clock}        label="Years of Experience" value={
+                                driver.years_of_experience != null
+                                    ? `${driver.years_of_experience} yr${driver.years_of_experience !== 1 ? "s" : ""}`
+                                    : null
+                            } />
+                            <Row icon={CheckCircle2} label="License Document"   value={driver.license_document_url ? "Uploaded ✓" : "Not uploaded"} />
                         </div>
+
+                        {/* License document preview */}
+                        {driver.license_document_url && (
+                            <div className="mt-2">
+                                <p className="text-[11px] font-bold text-muted uppercase tracking-wider mb-2">
+                                    Document Preview
+                                </p>
+                                {/\.(jpg|jpeg|png|gif|webp)$/i.test(driver.license_document_url) ? (
+                                    <div className="relative rounded-2xl overflow-hidden border border-border">
+                                        <img
+                                            src={driver.license_document_url}
+                                            alt="License document"
+                                            className="w-full max-h-48 object-cover"
+                                        />
+                                        <a
+                                            href={driver.license_document_url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="absolute top-2 right-2 bg-white/90 hover:bg-white rounded-lg px-2.5 py-1 text-xs font-semibold text-secondary flex items-center gap-1 transition"
+                                        >
+                                            <ExternalLink className="w-3.5 h-3.5" />
+                                            Open
+                                        </a>
+                                    </div>
+                                ) : (
+                                    <a
+                                        href={driver.license_document_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-surface text-secondary hover:bg-slate-50 text-sm font-semibold transition"
+                                    >
+                                        <FileText className="w-4 h-4 text-primary" />
+                                        View Document
+                                        <ExternalLink className="w-3.5 h-3.5" />
+                                    </a>
+                                )}
+                            </div>
+                        )}
                     </Section>
 
                     {/* Performance */}
@@ -153,8 +200,8 @@ function DriverDetailModal({ driver, onClose }) {
                     {/* Approval */}
                     <Section title="Approval Info">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <Row icon={UserCheck}   label="Approved By"  value={driver.approved_by  ?? "—"} />
-                            <Row icon={ShieldCheck} label="Approved At"  value={fmt(driver.approved_at)} />
+                            <Row icon={UserCheck}   label="Approved By" value={driver.approved_by ?? "—"} />
+                            <Row icon={ShieldCheck} label="Approved At" value={fmt(driver.approved_at)} />
                         </div>
                     </Section>
 
@@ -167,14 +214,57 @@ function DriverDetailModal({ driver, onClose }) {
                     </Section>
                 </div>
 
-                {/* Footer */}
-                <div className="px-6 py-4 border-t border-border flex items-center justify-end bg-white shrink-0">
+                {/* Footer — action buttons */}
+                <div className="px-6 py-4 border-t border-border flex items-center justify-between gap-3 bg-white shrink-0">
                     <button
                         onClick={onClose}
                         className="px-5 py-2.5 rounded-xl border border-border text-secondary hover:bg-slate-50 font-semibold transition"
                     >
                         Close
                     </button>
+
+                    <div className="flex gap-2">
+                        {isPending && onApprove && (
+                            <button
+                                onClick={() => { onApprove(driver.id); onClose(); }}
+                                disabled={isLoading}
+                                className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 font-semibold text-sm transition disabled:opacity-60"
+                            >
+                                {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserCheck className="w-4 h-4" />}
+                                Approve
+                            </button>
+                        )}
+                        {isPending && onReject && (
+                            <button
+                                onClick={() => { onReject(driver.id); onClose(); }}
+                                disabled={isLoading}
+                                className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl border border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100 font-semibold text-sm transition disabled:opacity-60"
+                            >
+                                {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Ban className="w-4 h-4" />}
+                                Reject
+                            </button>
+                        )}
+                        {isApproved && onReject && (
+                            <button
+                                onClick={() => { onReject(driver.id); onClose(); }}
+                                disabled={isLoading}
+                                className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl border border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100 font-semibold text-sm transition disabled:opacity-60"
+                            >
+                                {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldAlert className="w-4 h-4" />}
+                                Deactivate
+                            </button>
+                        )}
+                        {isBlocked && onApprove && (
+                            <button
+                                onClick={() => { onApprove(driver.id); onClose(); }}
+                                disabled={isLoading}
+                                className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 font-semibold text-sm transition disabled:opacity-60"
+                            >
+                                {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserCheck className="w-4 h-4" />}
+                                Re-Approve
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>,
