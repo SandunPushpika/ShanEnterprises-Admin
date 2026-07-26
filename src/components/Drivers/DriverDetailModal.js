@@ -62,6 +62,21 @@ function Section({ title, children }) {
     );
 }
 
+function formatStatus(status) {
+    if (status === 0 || status === "PENDING") return "PENDING";
+    if (status === 1 || status === "APPROVED") return "APPROVED";
+    if (status === 2 || status === "REJECTED") return "REJECTED";
+    if (status === 3 || status === "DEACTIVATED") return "DEACTIVATED";
+    return String(status ?? "—");
+}
+
+function formatAvailability(avail) {
+    if (avail === 0 || avail === "AVAILABLE" || avail === "Available") return "Available";
+    if (avail === 1 || avail === "UNAVAILABLE" || avail === "Unavailable") return "Unavailable";
+    if (avail === 2 || avail === "ON_TRIP" || avail === "On Trip") return "On Trip";
+    return String(avail ?? "—");
+}
+
 function DriverDetailModal({ driver, onClose, onApprove, onReject, actionLoading = {} }) {
     if (!driver) return null;
 
@@ -184,8 +199,8 @@ function DriverDetailModal({ driver, onClose, onApprove, onReject, actionLoading
                             {[
                                 ["Average Rating",   driver.average_rating != null ? `${Number(driver.average_rating).toFixed(1)} / 5.0` : "—"],
                                 ["Completed Rides",  driver.completed_rides ?? "—"],
-                                ["Availability",     driver.availability ?? "—"],
-                                ["Driver Status",    driver.driver_status  ?? "—"],
+                                ["Availability",     formatAvailability(driver.availability)],
+                                ["Driver Status",    formatStatus(driver.driver_status)],
                             ].map(([label, val]) => (
                                 <div key={label}>
                                     <p className="text-[11px] font-bold text-muted uppercase tracking-wider">

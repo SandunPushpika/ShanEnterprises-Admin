@@ -1,5 +1,5 @@
 import React from "react";
-import { Eye, Trash2, Calendar, User, Car, DollarSign, CheckCircle } from "lucide-react";
+import { Eye, Trash2, Calendar, User, Car, DollarSign, CheckCircle, UserCheck } from "lucide-react";
 
 const STATUS_STYLES = {
     PENDING: "bg-amber-50  text-amber-700  border-amber-200/60",
@@ -15,7 +15,7 @@ function fmtDate(dt) {
     });
 }
 
-function BookingCard({ booking, onView, onCancel, onComplete }) {
+function BookingCard({ booking, onView, onCancel, onComplete, onAssignDriver }) {
     const isActionable = booking.booking_status !== "CANCELLED" && booking.booking_status !== "COMPLETED";
 
     return (
@@ -41,6 +41,12 @@ function BookingCard({ booking, onView, onCancel, onComplete }) {
                     <span className="truncate">{booking.vehicle_name}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-muted">
+                    <UserCheck className="w-4 h-4 shrink-0 text-primary/70" />
+                    <span className="truncate">
+                        Driver: <strong className="text-secondary">{booking.driver_name || (booking.with_driver ? "Assigned" : "No Driver")}</strong>
+                    </span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-muted">
                     <Calendar className="w-4 h-4 shrink-0 text-primary/70" />
                     <span>{fmtDate(booking.pickup_datetime)} → {fmtDate(booking.return_datetime)}</span>
                 </div>
@@ -58,18 +64,28 @@ function BookingCard({ booking, onView, onCancel, onComplete }) {
                     <>
                         <button
                             onClick={() => onView(booking)}
-                            className="flex-1 inline-flex items-center justify-center gap-2 h-10 rounded-xl border border-primary/30 bg-primary-light text-primary hover:bg-primary/10 font-semibold text-sm transition"
+                            className="flex-1 inline-flex items-center justify-center gap-1.5 h-10 rounded-xl border border-primary/30 bg-primary-light text-primary hover:bg-primary/10 font-semibold text-xs transition"
                             aria-label={`View booking ${booking.booking_reference}`}
                         >
-                            <Eye className="w-4 h-4" />
+                            <Eye className="w-3.5 h-3.5" />
                             View
                         </button>
+                        {onAssignDriver && (
+                            <button
+                                onClick={() => onAssignDriver(booking)}
+                                className="flex-1 inline-flex items-center justify-center gap-1.5 h-10 rounded-xl border border-border bg-surface text-secondary hover:bg-slate-100 font-semibold text-xs transition"
+                                title="Assign or Change Driver"
+                            >
+                                <UserCheck className="w-3.5 h-3.5 text-primary" />
+                                Driver
+                            </button>
+                        )}
                         <button
                             onClick={() => onComplete(booking)}
-                            className="flex-1 inline-flex items-center justify-center gap-2 h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm shadow-md transition"
+                            className="flex-1 inline-flex items-center justify-center gap-1.5 h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-md transition"
                             aria-label={`Complete booking ${booking.booking_reference}`}
                         >
-                            <CheckCircle className="w-4 h-4" />
+                            <CheckCircle className="w-3.5 h-3.5" />
                             Complete
                         </button>
                         <button

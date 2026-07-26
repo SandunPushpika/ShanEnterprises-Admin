@@ -11,15 +11,35 @@ import {
     rejectDriver,
 } from "../services/DriverService";
 
-// Map backend DriverStatus enum → display string used by existing components
-const toDisplayStatus = (backendStatus) => {
-    switch (backendStatus) {
-        case "APPROVED":    return "Approved";
-        case "PENDING":     return "Pending";
-        case "REJECTED":
-        case "DEACTIVATED": return "Blocked";
-        default:            return backendStatus ?? "Unknown";
-    }
+// Map backend DriverStatus (string or integer) → display status ("Approved", "Pending", "Blocked")
+const toDisplayStatus = (status) => {
+    if (status === 1 || status === "APPROVED" || status === "Approved") return "Approved";
+    if (status === 0 || status === "PENDING" || status === "Pending") return "Pending";
+    if (
+        status === 2 ||
+        status === 3 ||
+        status === "REJECTED" ||
+        status === "DEACTIVATED" ||
+        status === "Blocked"
+    ) return "Blocked";
+    return status ?? "Unknown";
+};
+
+// Map backend DriverStatus (string or integer) → string enum name ("APPROVED", "PENDING", "REJECTED", "DEACTIVATED")
+const toStatusName = (status) => {
+    if (status === 0 || status === "PENDING") return "PENDING";
+    if (status === 1 || status === "APPROVED") return "APPROVED";
+    if (status === 2 || status === "REJECTED") return "REJECTED";
+    if (status === 3 || status === "DEACTIVATED") return "DEACTIVATED";
+    return String(status ?? "—");
+};
+
+// Map backend AvailabilityStatus (string or integer) → human readable label ("Available", "Unavailable", "On Trip")
+const toAvailabilityLabel = (availability) => {
+    if (availability === 0 || availability === "AVAILABLE") return "Available";
+    if (availability === 1 || availability === "UNAVAILABLE") return "Unavailable";
+    if (availability === 2 || availability === "ON_TRIP") return "On Trip";
+    return String(availability ?? "—");
 };
 
 // Map backend DriverResponse → shape expected by DriverCard / DriverDetailModal
@@ -30,14 +50,14 @@ const toUiDriver = (d) => ({
     license:               d.licenseNumber,
     phone:                 null, // not in DTO – kept for UI compat
     status:                toDisplayStatus(d.driverStatus),
-    // Pass through raw fields for the modal
+    // Pass through formatted fields for the modal
     license_expiry_date:   d.licenseExpiryDate,
     years_of_experience:   d.yearsOfExperience,
     license_document_url:  d.licenseDocumentUrl,
     average_rating:        d.averageRating,
     completed_rides:       d.completedRides,
-    availability:          d.availability,
-    driver_status:         d.driverStatus,
+    availability:          toAvailabilityLabel(d.availability),
+    driver_status:         toStatusName(d.driverStatus),
     approved_by:           d.approvedBy,
     approved_at:           d.approvedAt,
     created_at:            d.createdAt,

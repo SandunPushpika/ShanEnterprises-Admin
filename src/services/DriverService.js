@@ -2,17 +2,25 @@ import axiosInstance from "../utils/RequestHelper";
 
 const driverEndpoint = "/api/Driver";
 
+const STATUS_ENUM_MAP = {
+    PENDING: 0,
+    APPROVED: 1,
+    REJECTED: 2,
+    DEACTIVATED: 3,
+};
+
 /**
  * Search/list drivers by status with pagination.
  * @param {Object} params
- * @param {string|null} params.status  - "PENDING"|"APPROVED"|"REJECTED"|"DEACTIVATED"|null
- * @param {number}      params.pageNumber
- * @param {number}      params.pageSize
+ * @param {string|number|null} params.status  - "PENDING"|"APPROVED"|"REJECTED"|"DEACTIVATED"|0|1|2|3|null
+ * @param {number}             params.pageNumber
+ * @param {number}             params.pageSize
  */
 export const searchDrivers = async ({ status = null, pageNumber = 1, pageSize = 20 } = {}) => {
     try {
+        const payloadStatus = status != null ? (STATUS_ENUM_MAP[status] ?? status) : null;
         const response = await axiosInstance.post(`${driverEndpoint}/search`, {
-            status: status ?? null,
+            status: payloadStatus,
             pageNumber,
             pageSize,
         });

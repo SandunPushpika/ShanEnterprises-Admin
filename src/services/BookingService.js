@@ -58,4 +58,31 @@ export const completeBooking = async (bookingId) => {
         console.error("BookingService.completeBooking:", error);
         throw error;
     }
-}
+};
+
+/**
+ * Assign or change the driver for a booking, or remove driver (driverId = null).
+ * @param {number} bookingId
+ * @param {number|null} driverId
+ */
+export const assignDriverToBooking = async (bookingId, driverId = null) => {
+    try {
+        const response = await axiosInstance.put(
+            `${bookingEndpoint}/${bookingId}/driver`,
+            { driverId: driverId != null ? Number(driverId) : null }
+        );
+
+        if (!response.data.success) {
+            throw new Error(response.data.message || "Failed to update driver assignment");
+        }
+
+        return { success: true, message: response.data.message };
+    } catch (error) {
+        console.error("BookingService.assignDriverToBooking:", error);
+        const message =
+            error?.response?.data?.message ||
+            error?.message ||
+            "Failed to update driver assignment";
+        return { success: false, message };
+    }
+};

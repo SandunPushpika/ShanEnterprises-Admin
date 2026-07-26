@@ -46,7 +46,7 @@ function Section({ title, children }) {
     );
 }
 
-function BookingDetailModal({ booking, onClose, onEdit }) {
+function BookingDetailModal({ booking, onClose, onEdit, onAssignDriver }) {
     if (!booking) return null;
     const statusStyle = STATUS_STYLES[booking.booking_status] ?? STATUS_STYLES.PENDING;
 
@@ -86,7 +86,7 @@ function BookingDetailModal({ booking, onClose, onEdit }) {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <Row icon={User} label="Customer" value={booking.customer_name} />
                             <Row icon={Car} label="Vehicle" value={booking.vehicle_name} />
-                            <Row icon={UserCheck} label="Driver" value={booking.driver_name || (booking.with_driver ? "Assigned" : "Self-Drive")} />
+                            <Row icon={UserCheck} label="Driver" value={booking.driver_name || (booking.with_driver ? "Assigned" : "Self-Drive / No Driver")} />
                         </div>
                     </Section>
 
@@ -148,13 +148,25 @@ function BookingDetailModal({ booking, onClose, onEdit }) {
                     )}
                 </div>
 
-                <div className="px-6 py-4 border-t border-border flex items-center justify-end gap-3 bg-white shrink-0">
+                <div className="px-6 py-4 border-t border-border flex items-center justify-between gap-3 bg-white shrink-0">
                     <button
                         onClick={onClose}
                         className="px-5 py-2.5 rounded-xl border border-border text-secondary hover:bg-slate-50 font-semibold transition"
                     >
                         Close
                     </button>
+                    {onAssignDriver && (
+                        <button
+                            onClick={() => {
+                                onClose();
+                                onAssignDriver(booking);
+                            }}
+                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-cta-gradient text-white font-semibold text-sm shadow-glow transition"
+                        >
+                            <UserCheck className="w-4 h-4" />
+                            Manage Driver
+                        </button>
+                    )}
                 </div>
             </div>
         </div>,

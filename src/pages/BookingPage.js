@@ -8,9 +8,10 @@ import BookingStatsBar from "../components/bookings/BookingStatsBar";
 import BookingCard from "../components/bookings/BookingCard";
 import BookingForm from "../components/bookings/BookingForm";
 import BookingDetailModal from "../components/bookings/BookingDetailModal";
+import AssignDriverModal from "../components/bookings/AssignDriverModal";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import Pagination from "../components/common/Pagination";
-import { getAllBookings, cancelBooking, completeBooking } from "../services/BookingService";
+import { getAllBookings, cancelBooking, completeBooking, assignDriverToBooking } from "../services/BookingService";
 
 const BLANK_FORM = {
     customer_name: "",
@@ -40,6 +41,7 @@ function mapBooking(b) {
         id: b.id,
         customer_name: b.customerName ?? "",
         vehicle_name: b.vehicleModel ?? "",
+        driver_id: b.driverId ?? null,
         driver_name: b.driverName ?? "",
         booking_reference: b.bookingReference ?? "",
         pickup_location: b.pickupLocation ?? "",
@@ -78,11 +80,29 @@ export default function BookingPage() {
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [isCancelOpen, setIsCancelOpen] = useState(false);
     const [isCompleteOpen, setIsCompleteOpen] = useState(false);
+    const [isAssignDriverOpen, setIsAssignDriverOpen] = useState(false);
     const [viewedBooking, setViewedBooking] = useState(null);
     const [selectedBooking, setSelectedBooking] = useState(null);
     const [formData, setFormData] = useState(BLANK_FORM);
     const [formErrors, setFormErrors] = useState({});
     const [toast, setToast] = useState(null);
+
+    const openAssignDriver = (booking) => {
+        setSelectedBooking(booking);
+        setIsAssignDriverOpen(true);
+    };
+
+    const handleAssignDriverSave = async (bookingId, driverId) => {
+        const result = await assignDriverToBooking(bookingId, driverId);
+        if (result.success) {
+            showToast(result.message, "success");
+            setIsAssignDriverOpen(false);
+            setSelectedBooking(null);
+            loadBookings();
+        } else {
+            showToast(result.message, "error");
+        }
+    };
 
     const loadBookings = useCallback(async () => {
         try {
@@ -304,6 +324,7 @@ export default function BookingPage() {
                                 onView={openView}
                                 onCancel={openCancel}
                                 onComplete={openComplete}
+                                onAssignDriver={openAssignDriver}
                             />
                         ))}
                     </div>
@@ -337,6 +358,18 @@ export default function BookingPage() {
                     booking={viewedBooking}
                     onClose={() => setIsViewOpen(false)}
                     onEdit={openEdit}
+                    onAssignDriver={openAssignDriver}
+                />
+            )}
+
+            {isAssignDriverOpen && selectedBooking && (
+                <AssignDriverModal
+                    booking={selectedBooking}
+                    onClose={() => {
+                        setIsAssignDriverOpen(false);
+                        setSelectedBooking(null);
+                    }}
+                    onSave={handleAssignDriverSave}
                 />
             )}
 

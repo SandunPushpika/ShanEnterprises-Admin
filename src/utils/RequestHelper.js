@@ -10,48 +10,49 @@ const axiosInstance = axios.create({
 });
 
 axiosInstance.interceptors.request.use((req) => {
-
     const tokens = getStoredToken();
-    if (tokens) {
+    if (tokens?.accessToken) {
         req.headers.Authorization = `Bearer ${tokens.accessToken}`;
     }
-
     return req;
 }, (err) => Promise.reject(err));
 
-axiosInstance.interceptors.response.use((resp) => resp, async (error) => {
+axiosInstance.interceptors.response.use(
+    (resp) => resp,
+    async (error) => {
+        const originalRequestConfig = error.config;
+        const statusCode = error.response ? error.response.status : error.request?.status;
 
-    const originalRequestConfig = error.config;
+        if (statusCode === 401 && !originalRequestConfig._retry) {
+            originalRequestConfig._retry = true;
+            const tokens = getStoredToken();
 
-    if (error.request.status === 401 && !originalRequestConfig._retry) {
+            if (tokens?.refreshToken) {
+                try {
+                    const response = await axios.get(`${baseUrl}/api/Auth/refresh-token`, {
+                        headers: {
+                            "refresh-token": tokens.refreshToken
+                        }
+                    });
 
-        originalRequestConfig._retry = true;
-        const tokens = getStoredToken();
+                    const authData = response.data?.data || response.data;
 
-        if (tokens) {
-            try {
-                const response = await axios.post(baseUrl + "/api/Auth/refresh-token", {
-                    refreshToken: tokens.refreshToken
-                });
-
-                if (response.status === 200 && response.data.accessToken && response.data.refreshToken) {
-                    storeToken(response.data.accessToken, response.data.refreshToken);
-
-                    originalRequestConfig.headers.Authorization = `Bearer ${response.data.accessToken}`;
-
-                    return axiosInstance(originalRequestConfig);
+                    if (response.status === 200 && authData?.accessToken && authData?.refreshToken) {
+                        storeToken(authData.accessToken, authData.refreshToken);
+                        originalRequestConfig.headers.Authorization = `Bearer ${authData.accessToken}`;
+                        return axiosInstance(originalRequestConfig);
+                    }
+                } catch (err) {
+                    console.error("Failed to refresh token:", err);
+                    localStorage.removeItem('accessToken');
+                    localStorage.removeItem('refreshToken');
+                    window.location.href = '/login';
+                    return Promise.reject(err);
                 }
-
-            } catch (err) {
-                localStorage.removeItem('accessToken');
-                localStorage.removeItem('refreshToken');
-                window.location.href = '/login';
             }
         }
-
         return Promise.reject(error);
     }
-    return Promise.reject(error);
-});
+);
 
 export default axiosInstance;
