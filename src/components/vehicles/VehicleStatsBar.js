@@ -1,16 +1,17 @@
 import React from "react";
 import { CarFront, CheckCircle2, Layers, Wrench } from "lucide-react";
 
-function VehicleStatsBar({ total, available, rented, maintenance }) {
+function VehicleStatsBar({ total, available, rented, maintenance, unavailable }) {
     const stats = [
         { title: "Total Fleet", value: total, icon: CarFront, color: "text-primary bg-primary-light" },
         { title: "Available", value: available, icon: CheckCircle2, color: "text-emerald-600 bg-emerald-50" },
         { title: "Active Rentals", value: rented, icon: Layers, color: "text-amber-600 bg-amber-50" },
         { title: "In Repair", value: maintenance, icon: Wrench, color: "text-rose-600 bg-rose-50" },
+        { title: "Unavailable", value: unavailable || 0, icon: Layers, color: "text-slate-600 bg-slate-100" },
     ];
 
     return (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 md:gap-5">
             {stats.map((m, i) => (
                 <div
                     key={i}

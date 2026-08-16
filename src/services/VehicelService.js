@@ -119,3 +119,15 @@ export const getVehicleImages = async (vehicleId) => {
         throw error;
     }
 }
+
+export const setVehicleAvailability = async (vehicleId, makeUnavailable) => {
+    try {
+        const response = await axiosInstance.put(`${vehicleEndpoint}/${vehicleId}/availability`, { makeUnavailable });
+        if (!response.data.success) throw new Error(response.data.message || 'Failed to update vehicle availability');
+        return { success: true, message: response.data.message };
+    } catch (error) {
+        console.error('VehicleService.setVehicleAvailability:', error);
+        const message = error?.response?.data?.message || error?.message || 'Failed to update vehicle availability';
+        return { success: false, message };
+    }
+};

@@ -9,7 +9,7 @@ import DeleteConfirmModal from "../components/common/DeleteConfirmModal";
 import VehicleStatsBar from "../components/vehicles/VehicleStatsBar";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import Pagination from "../components/common/Pagination";
-import { addVehicle, deleteVehicle, getVehicles, updateVehicle } from "../services/VehicelService";
+import { addVehicle, deleteVehicle, getVehicles, updateVehicle, setVehicleAvailability } from "../services/VehicelService";
 import { getVehicleStatusLabel } from "../utils/VehicleEnums";
 
 export default function VehiclePage() {
@@ -27,13 +27,21 @@ export default function VehiclePage() {
     const [selectedVehicle, setSelectedVehicle] = useState(null);
     const [toast, setToast] = useState(null);
 
+    const [availabilityModal, setAvailabilityModal] = useState(false);
+
     useEffect(() => {
         loadVehicles();
     }, [pageNumber]);
 
-    const available = vehicles.filter((v) => v.status == 0).length;
-    const rented = vehicles.filter((v) => v.status == 1).length;
-    const maintenance = vehicles.filter((v) => v.status == 2).length;
+    const getStatusMatch = (statusVal, expectedLabel) => {
+        const label = getVehicleStatusLabel(statusVal).toUpperCase();
+        return label === expectedLabel.toUpperCase();
+    };
+
+    const available = vehicles.filter((v) => getStatusMatch(v.status, "Available")).length;
+    const rented = vehicles.filter((v) => getStatusMatch(v.status, "Booked")).length;
+    const maintenance = vehicles.filter((v) => getStatusMatch(v.status, "Maintenance")).length;
+    const unavailable = vehicles.filter((v) => getStatusMatch(v.status, "Unavailable")).length;
 
     const filtered = vehicles.filter((v) => {
         const q = searchQuery.toLowerCase().trim();
@@ -58,7 +66,7 @@ export default function VehiclePage() {
                 minPrice: 0,
                 maxPrice: 0,
                 typeId: 0,
-                status: 0,
+                status: null,
                 minPassengers: 0,
                 pageNumber,
                 pageSize,
@@ -143,6 +151,26 @@ export default function VehiclePage() {
         setSelectedVehicle(null);
     };
 
+    const openAvailabilityModal = (vehicle) => {
+        setSelectedVehicle(vehicle);
+        setAvailabilityModal(true);
+    };
+
+    const handleSetAvailability = async () => {
+        const statusStr = String(selectedVehicle.status).toUpperCase();
+        const currentlyUnavailable = statusStr === "UNAVAILABLE" || statusStr === "3";
+        const makeUnavailable = !currentlyUnavailable;
+        const result = await setVehicleAvailability(selectedVehicle.id, makeUnavailable);
+        setAvailabilityModal(false);
+        if (result.success) {
+            showToast(result.message);
+            await loadVehicles();
+        } else {
+            showToast(result.message, "error");
+        }
+        setSelectedVehicle(null);
+    };
+
     return (
         <div className="p-4 md:p-8 min-h-[calc(100vh-80px)] space-y-8 bg-surface">
             {toast && <Toast type={toast.type} message={toast.message} />}
@@ -170,6 +198,7 @@ export default function VehiclePage() {
                 available={available}
                 rented={rented}
                 maintenance={maintenance}
+                unavailable={unavailable}
             />
 
             <SearchBar
@@ -199,6 +228,7 @@ export default function VehiclePage() {
                                 vehicle={v}
                                 onEdit={openEdit}
                                 onDelete={openDelete}
+                                onToggleAvailability={openAvailabilityModal}
                             />
                         ))}
                     </div>
@@ -261,6 +291,49 @@ export default function VehiclePage() {
                     onConfirm={handleDelete}
                     onCancel={() => setIsDeleteOpen(false)}
                 />
+            )}
+
+            {availabilityModal && (
+                <Modal
+                    title={
+                        (() => {
+                            const s = String(selectedVehicle?.status).toUpperCase();
+                            return s === "3" || s === "UNAVAILABLE" ? "Make Vehicle Available" : "Mark Vehicle Unavailable";
+                        })()
+                    }
+                    subtitle={`Are you sure you want to change availability for ${selectedVehicle?.model}?`}
+                    onClose={() => setAvailabilityModal(false)}
+                >
+                    <div className="p-6 pt-0 space-y-4">
+                        <p className="text-secondary">
+                            {(() => {
+                                const s = String(selectedVehicle?.status).toUpperCase();
+                                return s === "3" || s === "UNAVAILABLE"
+                                    ? "This vehicle will become visible to customers for booking." 
+                                    : "This vehicle will be hidden from customers and cannot be booked.";
+                            })()}
+                        </p>
+                        <div className="flex gap-4">
+                            <button
+                                onClick={() => setAvailabilityModal(false)}
+                                className="flex-1 py-2.5 rounded-xl border border-border text-secondary hover:bg-slate-50 font-semibold"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleSetAvailability}
+                                className={`flex-1 py-2.5 rounded-xl font-semibold text-white ${
+                                    (() => {
+                                        const s = String(selectedVehicle?.status).toUpperCase();
+                                        return s === "3" || s === "UNAVAILABLE" ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-amber-600 hover:bg-amber-700';
+                                    })()
+                                }`}
+                            >
+                                Confirm
+                            </button>
+                        </div>
+                    </div>
+                </Modal>
             )}
         </div>
     );

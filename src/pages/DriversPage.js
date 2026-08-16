@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import DriverStats from "../components/Drivers/DriverStats";
 import DriverList from "../components/Drivers/DriverList";
 import DriverDetailModal from "../components/Drivers/DriverDetailModal";
@@ -87,7 +88,8 @@ const TAB_TO_STATUS = {
     BLOCKED:  null, // handled client-side (both REJECTED + DEACTIVATED)
 };
 
-function DriversPage() {
+export default function DriversPage() {
+    const navigate = useNavigate();
     const [drivers, setDrivers]         = useState([]);
     const [loading, setLoading]         = useState(true);
     const [refreshing, setRefreshing]   = useState(false);
@@ -183,6 +185,10 @@ function DriversPage() {
     };
 
     const handleView = (driver) => setViewedDriver(driver);
+
+    const handleViewTrips = (driverId) => {
+        navigate(`/drivers/${driverId}/trips`);
+    };
 
     // ── Client-side filtering ──
     const filteredDrivers = drivers.filter((driver) => {
@@ -292,6 +298,7 @@ function DriversPage() {
                     onApprove={handleApprove}
                     onReject={handleReject}
                     onView={handleView}
+                    onViewTrips={handleViewTrips}
                     actionLoading={actionLoading}
                 />
             ) : (
@@ -327,5 +334,3 @@ function DriversPage() {
         </div>
     );
 }
-
-export default DriversPage;

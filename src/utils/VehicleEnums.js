@@ -57,11 +57,19 @@ export const getFuelValue = (label) => {
 };
 
 export const getVehicleStatusLabel = (value) => {
+    if (value === undefined || value === null) {
+        return "Available";
+    }
+
     if (typeof value === "string") {
-        const normalized = value.trim();
-        if (VEHICLE_STATUS_VALUES[normalized] !== undefined) {
-            return normalized;
-        }
+        const normalized = value.trim().toUpperCase();
+        if (normalized === "AVAILABLE") return "Available";
+        if (normalized === "BOOKED") return "Booked";
+        if (normalized === "MAINTENANCE") return "Maintenance";
+        if (normalized === "UNAVAILABLE") return "Unavailable";
+        
+        // Capitalize first letter as fallback
+        return normalized.charAt(0) + normalized.slice(1).toLowerCase();
     }
 
     const numValue = Number(value);

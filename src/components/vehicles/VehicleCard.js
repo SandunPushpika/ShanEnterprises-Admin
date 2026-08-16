@@ -10,7 +10,7 @@ const STATUS_STYLES = {
     Unavailable: "bg-slate-100 text-slate-700 border-slate-200/60",
 };
 
-function VehicleCard({ vehicle, onEdit, onDelete }) {
+function VehicleCard({ vehicle, onEdit, onDelete, onToggleAvailability }) {
     const statusLabel = getVehicleStatusLabel(vehicle.status);
 
     return (
@@ -100,10 +100,27 @@ function VehicleCard({ vehicle, onEdit, onDelete }) {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="mt-6 pt-4 border-t border-border flex items-center gap-3">
+                <div className="mt-6 pt-4 border-t border-border flex items-center gap-2">
+                    <button
+                        onClick={() => onToggleAvailability && onToggleAvailability(vehicle)}
+                        className={`flex-1 inline-flex items-center justify-center gap-1.5 h-10 rounded-xl border font-semibold text-xs transition ${
+                            (() => {
+                                const s = String(vehicle.status).toUpperCase();
+                                return s === "3" || s === "UNAVAILABLE"
+                                ? 'border-emerald-200/50 bg-emerald-50 text-emerald-600 hover:bg-emerald-100' 
+                                : 'border-amber-200/50 bg-amber-50 text-amber-600 hover:bg-amber-100';
+                            })()
+                        }`}
+                        aria-label="Toggle Availability"
+                    >
+                        {(() => {
+                            const s = String(vehicle.status).toUpperCase();
+                            return s === "3" || s === "UNAVAILABLE" ? 'Make Available' : 'Mark Unavailable';
+                        })()}
+                    </button>
                     <button
                         onClick={() => onEdit(vehicle)}
-                        className="flex-1 inline-flex items-center justify-center gap-2 h-11 rounded-xl border border-border text-secondary hover:bg-slate-50 font-semibold transition"
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 h-10 rounded-xl border border-border text-secondary hover:bg-slate-50 font-semibold text-xs transition"
                         aria-label={`Edit ${vehicle.model} details`}
                     >
                         <Edit2 className="w-4 h-4" />
@@ -111,7 +128,7 @@ function VehicleCard({ vehicle, onEdit, onDelete }) {
                     </button>
                     <button
                         onClick={() => onDelete(vehicle)}
-                        className="w-11 h-11 inline-flex items-center justify-center rounded-xl border border-rose-200/50 bg-rose-50 text-rose-600 hover:bg-rose-100 transition"
+                        className="w-10 h-10 shrink-0 inline-flex items-center justify-center rounded-xl border border-rose-200/50 bg-rose-50 text-rose-600 hover:bg-rose-100 transition"
                         aria-label={`Delete ${vehicle.model}`}
                         title={`Delete ${vehicle.model}`}
                     >

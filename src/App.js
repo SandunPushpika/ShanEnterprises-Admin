@@ -13,6 +13,8 @@ import ProtectedRoute from './auth/ProtectedRoute';
 import AuthProvider from './context/AuthProvider';
 import DriversPage from "./pages/DriversPage";
 import VehicleMaintenancePage from './pages/VehicleMaintenancePage';
+import ContactRequestsPage from './pages/ContactRequestsPage';
+import DriverTripsAdminPage from './pages/DriverTripsAdminPage';
 
 function App() {
   return (
@@ -29,6 +31,8 @@ function App() {
               <Route path="customers" element={<CustomersPage />} />
               <Route path="bookings" element={<BookingPage />} />
               <Route path="/drivers" element={<DriversPage />} />
+              <Route path="/drivers/:driverId/trips" element={<DriverTripsAdminPage />} />
+              <Route path="/contact-requests" element={<ContactRequestsPage />} />
               <Route path="/vehicle-maintenance" element={<VehicleMaintenancePage />} />
             </Route>
           </Route>

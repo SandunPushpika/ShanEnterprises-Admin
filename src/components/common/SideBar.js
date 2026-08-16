@@ -6,7 +6,8 @@ import {
     ClipboardCheck,
     LogOut,
     X,
-    Wrench
+    Wrench,
+    MessageSquare
 } from "lucide-react";
 
 import { NavLink } from "react-router-dom";
@@ -17,6 +18,7 @@ const navItems = [
     { icon: CalendarCheck, label: "Bookings", path: "/bookings" },
     { icon: ClipboardCheck, label: "Drivers", path: "/drivers" },
     { icon: Users, label: "Customers", path: "/customers" },
+    { icon: MessageSquare, label: "Contact Requests", path: "/contact-requests" },
     { icon: Wrench, label: "Maintenance", path: "/vehicle-maintenance" },
 ];
 

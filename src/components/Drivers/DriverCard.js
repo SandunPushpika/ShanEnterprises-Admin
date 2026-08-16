@@ -25,7 +25,7 @@ const STATUS_ICON = {
     Blocked:  XCircle,
 };
 
-function DriverCard({ driver, onApprove, onReject, onView, actionLoading = {} }) {
+function DriverCard({ driver, onApprove, onReject, onView, onViewTrips, actionLoading = {} }) {
     const isPending  = driver.status === "Pending";
     const isApproved = driver.status === "Approved";
     const isBlocked  = driver.status === "Blocked";
@@ -93,16 +93,31 @@ function DriverCard({ driver, onApprove, onReject, onView, actionLoading = {} })
             {/* Actions */}
             <div className="flex gap-2.5 mt-5 pt-4 border-t border-border/60">
                 {/* View — always visible */}
-                <button
-                    onClick={() => onView && onView(driver)}
-                    disabled={isLoading}
-                    className="flex-1 inline-flex items-center justify-center gap-1.5 h-10 rounded-xl border border-primary/30 bg-primary-light text-primary hover:bg-primary/10 font-semibold text-xs transition active:scale-[0.98] disabled:opacity-60"
-                    aria-label={`View ${driver.name}`}
-                >
-                    <Eye className="w-4 h-4" />
-                    View
-                </button>
-
+                <div className="flex w-full gap-2.5">
+                    <button
+                        onClick={() => onView && onView(driver)}
+                        disabled={isLoading}
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 h-10 rounded-xl border border-primary/30 bg-primary-light text-primary hover:bg-primary/10 font-semibold text-xs transition active:scale-[0.98] disabled:opacity-60"
+                        aria-label={`View ${driver.name}`}
+                    >
+                        <Eye className="w-4 h-4" />
+                        View
+                    </button>
+                    {isApproved && (
+                        <button
+                            onClick={() => onViewTrips && onViewTrips(driver.id)}
+                            disabled={isLoading}
+                            className="flex-1 inline-flex items-center justify-center gap-1.5 h-10 rounded-xl border border-border text-secondary hover:bg-slate-50 font-semibold text-xs transition active:scale-[0.98] disabled:opacity-60"
+                            aria-label={`View Trips for ${driver.name}`}
+                        >
+                            <Clock3 className="w-4 h-4" />
+                            Trips
+                        </button>
+                    )}
+                </div>
+            </div>
+            
+            <div className="flex gap-2.5 mt-2.5">
                 {isPending && (
                     <>
                         <button

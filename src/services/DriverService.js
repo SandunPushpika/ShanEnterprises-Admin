@@ -97,3 +97,19 @@ export const rejectDriver = async (driverId) => {
         return { success: false, message };
     }
 };
+
+/**
+ * Get driver trip history with pagination.
+ */
+export const getDriverTrips = async (driverId, pageNumber = 1, pageSize = 10) => {
+    try {
+        const response = await axiosInstance.get(`${driverEndpoint}/${driverId}/trips`, {
+            params: { pageNumber, pageSize }
+        });
+        if (!response.data.success) throw new Error(response.data.message || 'Failed to fetch driver trips');
+        return response.data.data;
+    } catch (error) {
+        console.error('DriverService.getDriverTrips:', error);
+        throw error;
+    }
+};
