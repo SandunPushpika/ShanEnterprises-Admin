@@ -10,7 +10,7 @@ export const login = async (username, password) => {
         });
 
         if (response?.status === 200 && response.data.data.accessToken && response.data.data.refreshToken && response.data.success) {
-            if(response.data.data.userRole !== 0){
+            if (response.data.data.userRole !== "ADMIN") {
                 return {
                     success: false,
                     message: "Unauthorized access"
@@ -44,7 +44,7 @@ export const login = async (username, password) => {
     }
 }
 
-export const register = async (firstname,lastname,email,password, keycode) => {
+export const register = async (firstname, lastname, email, password, keycode) => {
 
     try {
         const response = await axiosInstance.post("/api/Auth/register", {
@@ -85,10 +85,10 @@ export const register = async (firstname,lastname,email,password, keycode) => {
 
 export const verifyUser = async (email, code) => {
 
-    try{
+    try {
 
         const response = await axiosInstance.get(`/api/Auth/verify-code?code=${code}`);
-        if(response.status == 200){
+        if (response.status == 200) {
             return {
                 success: true,
                 message: "User verified"
@@ -100,8 +100,8 @@ export const verifyUser = async (email, code) => {
             success: false,
             message: "Invalid response from server"
         };
-    }catch(error){
-        
+    } catch (error) {
+
         if (error.response && error.response.data) {
             return {
                 success: false,
