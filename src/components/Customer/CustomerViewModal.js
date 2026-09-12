@@ -12,8 +12,8 @@ import {
 } from "lucide-react";
 
 const STATUS_STYLES = {
-    ACTIVE:    "bg-emerald-50 text-emerald-700 border-emerald-200",
-    INACTIVE:  "bg-slate-50 text-slate-700 border-slate-200",
+    ACTIVE: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    INACTIVE: "bg-slate-50 text-slate-700 border-slate-200",
     SUSPENDED: "bg-rose-50 text-rose-700 border-rose-200",
 };
 
@@ -27,7 +27,8 @@ function fmt(dt) {
 }
 
 function Row({ icon: Icon, label, value }) {
-    if (!value && value !== 0) return null;
+    const hasValue = value !== null && value !== undefined && value !== "";
+
     return (
         <div className="flex items-start gap-3">
             <div className="w-8 h-8 rounded-lg bg-primary-light flex items-center justify-center shrink-0 mt-0.5">
@@ -37,7 +38,12 @@ function Row({ icon: Icon, label, value }) {
                 <p className="text-[11px] font-bold text-muted uppercase tracking-wider">
                     {label}
                 </p>
-                <p className="text-sm font-medium text-secondary mt-0.5">{value}</p>
+                <p
+                    className={`text-sm font-medium mt-0.5 ${hasValue ? "text-secondary" : "text-muted font-bold"
+                        }`}
+                >
+                    {hasValue ? value : "—"}
+                </p>
             </div>
         </div>
     );
@@ -114,14 +120,14 @@ function CustomerViewModal({ customer, onClose }) {
                     <Section title="Contact Info">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <Row icon={Phone} label="Phone" value={customer.phoneNumber} />
-                            <Row icon={Mail}  label="Email" value={customer.email} />
+                            <Row icon={Mail} label="Email" value={customer.email} />
                         </div>
                     </Section>
 
                     {/* Locations */}
                     <Section title="Address Details">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <Row icon={MapPin} label="City"    value={customer.city} />
+                            <Row icon={MapPin} label="City" value={customer.city} />
                             <Row icon={MapPin} label="Address" value={customer.address} />
                         </div>
                     </Section>
@@ -129,7 +135,7 @@ function CustomerViewModal({ customer, onClose }) {
                     {/* Identity & Verification */}
                     <Section title="Identity & Verification">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <Row icon={Hash}      label="NIC / Passport" value={customer.nicPassportNumber} />
+                            <Row icon={Hash} label="NIC / Passport" value={customer.nicPassportNumber} />
                             <Row icon={BadgeCheck} label="Email Verified" value={customer.emailVerified ? "Verified Account ✓" : "Verification Pending"} />
                         </div>
                     </Section>

@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import CustomerStats from "../components/Customer/CustomerStats";
-import CustomerList from "../components/Customer/CustomerList";
+import CustomerTable from "../components/Customer/CustomerTable";
 import CustomerViewModal from "../components/Customer/CustomerViewModal";
 import SearchBar from "../components/common/Searchbar";
-import { UserX } from "lucide-react";
+import { UserX, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import { searchCustomers, updateCustomerStatus } from "../services/CustomerService";
 
 const TABS = ["ALL", "ACTIVE", "INACTIVE"];
 const TAB_LABELS = {
@@ -17,163 +18,132 @@ const PILL_ACTIVE = {
     INACTIVE: "bg-rose-600 text-white border-rose-600",
 };
 
-const INITIAL_CUSTOMERS = [
-    {
-        id: 1,
-        firstName: "John",
-        lastName: "Smith",
-        email: "john@gmail.com",
-        phoneNumber: "+94 71 123 4567",
-        city: "Colombo",
-        address: "Main Street Colombo",
-        nicPassportNumber: "200145678901",
-        status: "ACTIVE",
-        emailVerified: true,
-        profileImageUrl: null,
-        createdAt: "2026-01-12",
-        updatedAt: "2026-05-20",
-    },
-    {
-        id: 2,
-        firstName: "Emma",
-        lastName: "Johnson",
-        email: "emma@gmail.com",
-        phoneNumber: "+94 77 987 6543",
-        city: "Kandy",
-        address: "Lake Road",
-        nicPassportNumber: "199945612345",
-        status: "ACTIVE",
-        emailVerified: true,
-        profileImageUrl: null,
-        createdAt: "2026-02-08",
-        updatedAt: "2026-04-15",
-    },
-    {
-        id: 3,
-        firstName: "Michael",
-        lastName: "Brown",
-        email: "michael@gmail.com",
-        phoneNumber: "+94 76 555 1122",
-        city: "Galle",
-        address: "Temple Street",
-        nicPassportNumber: "199812345678",
-        status: "INACTIVE",
-        emailVerified: false,
-        profileImageUrl: null,
-        createdAt: "2026-03-01",
-        updatedAt: "2026-05-10",
-    },
-    {
-        id: 4,
-        firstName: "Sarah",
-        lastName: "Wilson",
-        email: "sarah@gmail.com",
-        phoneNumber: "+94 70 555 6677",
-        city: "Matara",
-        address: "Flower Road",
-        nicPassportNumber: "200267890123",
-        status: "ACTIVE",
-        emailVerified: true,
-        profileImageUrl: null,
-        createdAt: "2026-03-18",
-        updatedAt: "2026-05-25",
-    },
-];
+const PAGE_SIZE = 8;
 
 function CustomersPage() {
-    const [customers, setCustomers] = useState(INITIAL_CUSTOMERS);
+    const [customers, setCustomers] = useState([]);
+    const [totalCount, setTotalCount] = useState(0);
+    const [pageNumber, setPageNumber] = useState(1);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(null);
+
     const [selectedCustomer, setSelectedCustomer] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("ALL");
 
-    // Handlers to modify customer status
-    const handleActivate = (id) => {
-        setCustomers((prev) =>
-            prev.map((c) =>
-                c.id === id
-                    ? {
-                          ...c,
-                          status: "ACTIVE",
-                          updatedAt: new Date().toISOString().split("T")[0],
-                      }
-                    : c
-            )
-        );
-        // Also update viewed customer modal state if open
-        setSelectedCustomer((prev) =>
-            prev && prev.id === id ? { ...prev, status: "ACTIVE" } : prev
-        );
+    const fetchCustomers = useCallback(async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const result = await searchCustomers({
+                status: statusFilter,
+                searchTerm,
+                pageNumber,
+                pageSize: PAGE_SIZE,
+            });
+
+            setCustomers(result.data || []);
+            setTotalCount(result.total || 0);
+        } catch (err) {
+            console.error("Failed to load customers:", err);
+            setError(err.message || "Failed to load customers.");
+            setCustomers([]);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [statusFilter, searchTerm, pageNumber]);
+
+    useEffect(() => {
+        fetchCustomers();
+    }, [fetchCustomers]);
+
+    const handleStatusChange = (tab) => {
+        setStatusFilter(tab);
+        setPageNumber(1);
     };
 
-    const handleDeactivate = (id) => {
-        setCustomers((prev) =>
-            prev.map((c) =>
-                c.id === id
-                    ? {
-                          ...c,
-                          status: "INACTIVE",
-                          updatedAt: new Date().toISOString().split("T")[0],
-                      }
-                    : c
-            )
-        );
-        // Also update viewed customer modal state if open
-        setSelectedCustomer((prev) =>
-            prev && prev.id === id ? { ...prev, status: "INACTIVE" } : prev
-        );
+    const handleSearchChange = (term) => {
+        setSearchTerm(term);
+        setPageNumber(1);
     };
 
-    // Filtering
-    const filteredCustomers = customers.filter((c) => {
-        const fullName = `${c.firstName} ${c.lastName}`.toLowerCase();
+    const handleActivate = async (id) => {
+        try {
+            await updateCustomerStatus(id, "ACTIVE");
+            setCustomers((prev) =>
+                prev.map((c) =>
+                    c.id === id
+                        ? {
+                            ...c,
+                            status: "ACTIVE",
+                            updatedAt: new Date().toISOString(),
+                        }
+                        : c
+                )
+            );
+            if (selectedCustomer && selectedCustomer.id === id) {
+                setSelectedCustomer((prev) => ({ ...prev, status: "ACTIVE" }));
+            }
+        } catch (err) {
+            alert("Failed to activate customer: " + (err.message || "Unknown error"));
+        }
+    };
 
-        const matchesSearch =
-            fullName.includes(searchTerm.toLowerCase()) ||
-            c.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            c.phoneNumber.includes(searchTerm);
+    const handleDeactivate = async (id) => {
+        try {
+            await updateCustomerStatus(id, "INACTIVE");
+            setCustomers((prev) =>
+                prev.map((c) =>
+                    c.id === id
+                        ? {
+                            ...c,
+                            status: "INACTIVE",
+                            updatedAt: new Date().toISOString(),
+                        }
+                        : c
+                )
+            );
+            if (selectedCustomer && selectedCustomer.id === id) {
+                setSelectedCustomer((prev) => ({ ...prev, status: "INACTIVE" }));
+            }
+        } catch (err) {
+            alert("Failed to deactivate customer: " + (err.message || "Unknown error"));
+        }
+    };
 
-        const matchesStatus =
-            statusFilter === "ALL" || c.status === statusFilter;
-
-        return matchesSearch && matchesStatus;
-    });
+    const totalPages = Math.ceil(totalCount / PAGE_SIZE) || 1;
 
     return (
         <div className="p-4 md:p-8 min-h-[calc(100vh-80px)] space-y-8 bg-surface">
-            {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-extrabold text-secondary tracking-tight font-display">
                         Customers
                     </h1>
                     <p className="text-muted text-sm mt-1">
-                        Manage customer accounts and profiles
+                        Manage customer accounts and profiles ({totalCount} total registered)
                     </p>
                 </div>
             </div>
 
-            {/* Dynamic Statistics Cards */}
             <CustomerStats customers={customers} />
 
-            {/* Search and Filters */}
             <div className="space-y-3">
                 <SearchBar
                     searchQuery={searchTerm}
-                    setSearchQuery={setSearchTerm}
+                    setSearchQuery={handleSearchChange}
                     placeholder="Search customers by name, email, or phone..."
                 />
 
-                {/* Status Tabs */}
                 <div className="flex flex-wrap gap-2">
                     {TABS.map((tab) => (
                         <button
                             key={tab}
-                            onClick={() => setStatusFilter(tab)}
-                            className={`px-4 py-1.5 rounded-full border text-xs font-bold transition ${
-                                statusFilter === tab
-                                    ? PILL_ACTIVE[tab]
-                                    : "bg-white border-border text-secondary hover:bg-slate-50"
-                            }`}
+                            onClick={() => handleStatusChange(tab)}
+                            className={`px-4 py-1.5 rounded-full border text-xs font-bold transition ${statusFilter === tab
+                                ? PILL_ACTIVE[tab]
+                                : "bg-white border-border text-secondary hover:bg-slate-50"
+                                }`}
                         >
                             {TAB_LABELS[tab]}
                         </button>
@@ -181,14 +151,59 @@ function CustomersPage() {
                 </div>
             </div>
 
-            {/* Customer List or Empty State */}
-            {filteredCustomers.length > 0 ? (
-                <CustomerList
-                    customers={filteredCustomers}
-                    onView={setSelectedCustomer}
-                    onActivate={handleActivate}
-                    onDeactivate={handleDeactivate}
-                />
+            {isLoading ? (
+                <div className="flex flex-col items-center justify-center p-16 bg-card border border-border rounded-3xl shadow-card">
+                    <Loader2 className="w-10 h-10 text-primary animate-spin mb-3" />
+                    <p className="text-sm font-medium text-muted">Loading customers...</p>
+                </div>
+            ) : error ? (
+                <div className="bg-rose-50 border border-rose-200 text-rose-700 p-6 rounded-3xl text-center">
+                    <p className="font-semibold">{error}</p>
+                    <button
+                        onClick={fetchCustomers}
+                        className="mt-3 px-4 py-2 bg-rose-600 text-white text-xs font-bold rounded-xl hover:bg-rose-700 transition"
+                    >
+                        Try Again
+                    </button>
+                </div>
+            ) : customers.length > 0 ? (
+                <>
+                    <CustomerTable
+                        customers={customers}
+                        onView={setSelectedCustomer}
+                        onActivate={handleActivate}
+                        onDeactivate={handleDeactivate}
+                    />
+
+                    {totalPages > 1 && (
+                        <div className="flex items-center justify-between border-t border-border pt-4 px-2">
+                            <p className="text-xs text-muted font-medium">
+                                Showing Page {pageNumber} of {totalPages} ({totalCount} customers)
+                            </p>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => setPageNumber((p) => Math.max(p - 1, 1))}
+                                    disabled={pageNumber === 1}
+                                    className="p-2 rounded-xl border border-border bg-white text-secondary disabled:opacity-40 hover:bg-slate-50 transition"
+                                    aria-label="Previous Page"
+                                >
+                                    <ChevronLeft className="w-4 h-4" />
+                                </button>
+                                <span className="text-xs font-bold px-3 text-secondary">
+                                    {pageNumber} / {totalPages}
+                                </span>
+                                <button
+                                    onClick={() => setPageNumber((p) => Math.min(p + 1, totalPages))}
+                                    disabled={pageNumber === totalPages}
+                                    className="p-2 rounded-xl border border-border bg-white text-secondary disabled:opacity-40 hover:bg-slate-50 transition"
+                                    aria-label="Next Page"
+                                >
+                                    <ChevronRight className="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </>
             ) : (
                 <div className="bg-card border border-border rounded-3xl p-12 text-center shadow-card max-w-xl mx-auto mt-6">
                     <UserX className="w-16 h-16 text-muted/50 mx-auto stroke-[1.5]" />
@@ -198,7 +213,7 @@ function CustomersPage() {
                     </p>
                     {searchTerm && (
                         <button
-                            onClick={() => setSearchTerm("")}
+                            onClick={() => handleSearchChange("")}
                             className="mt-6 px-5 py-2.5 rounded-xl border border-border text-secondary hover:bg-slate-50 font-semibold transition"
                         >
                             Clear Search
