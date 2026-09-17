@@ -70,19 +70,15 @@ function CustomersPage() {
     const handleActivate = async (id) => {
         try {
             await updateCustomerStatus(id, "ACTIVE");
-            setCustomers((prev) =>
-                prev.map((c) =>
-                    c.id === id
-                        ? {
-                            ...c,
-                            status: "ACTIVE",
-                            updatedAt: new Date().toISOString(),
-                        }
-                        : c
-                )
-            );
+
             if (selectedCustomer && selectedCustomer.id === id) {
                 setSelectedCustomer((prev) => ({ ...prev, status: "ACTIVE" }));
+            }
+
+            if (statusFilter === "INACTIVE" && customers.length === 1 && pageNumber > 1) {
+                setPageNumber((p) => p - 1);
+            } else {
+                await fetchCustomers();
             }
         } catch (err) {
             alert("Failed to activate customer: " + (err.message || "Unknown error"));
@@ -92,19 +88,15 @@ function CustomersPage() {
     const handleDeactivate = async (id) => {
         try {
             await updateCustomerStatus(id, "INACTIVE");
-            setCustomers((prev) =>
-                prev.map((c) =>
-                    c.id === id
-                        ? {
-                            ...c,
-                            status: "INACTIVE",
-                            updatedAt: new Date().toISOString(),
-                        }
-                        : c
-                )
-            );
+
             if (selectedCustomer && selectedCustomer.id === id) {
                 setSelectedCustomer((prev) => ({ ...prev, status: "INACTIVE" }));
+            }
+
+            if (statusFilter === "ACTIVE" && customers.length === 1 && pageNumber > 1) {
+                setPageNumber((p) => p - 1);
+            } else {
+                await fetchCustomers();
             }
         } catch (err) {
             alert("Failed to deactivate customer: " + (err.message || "Unknown error"));
