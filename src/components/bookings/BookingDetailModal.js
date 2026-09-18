@@ -155,7 +155,7 @@ function BookingDetailModal({ booking, onClose, onEdit, onAssignDriver }) {
                     >
                         Close
                     </button>
-                    {onAssignDriver && (
+                    {(onAssignDriver && statusStyle == STATUS_STYLES.PENDING) && (
                         <button
                             onClick={() => {
                                 onClose();

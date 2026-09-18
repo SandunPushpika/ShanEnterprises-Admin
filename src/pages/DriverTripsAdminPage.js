@@ -98,19 +98,19 @@ export default function DriverTripsAdminPage() {
                                 {trips.map((trip) => (
                                     <tr key={trip.id} className="border-b border-border hover:bg-surface transition">
                                         <td className="px-6 py-5 font-semibold text-secondary">
-                                            #{trip.referenceNumber || trip.id}
+                                            #{trip.bookingReference}
                                         </td>
                                         <td className="px-6 py-5 text-secondary">{trip.customerName}</td>
                                         <td className="px-6 py-5 text-secondary">{trip.vehicleModel}</td>
                                         <td className="px-6 py-5 text-secondary">
-                                            {new Date(trip.startDate).toLocaleDateString()}
+                                            {new Date(trip.pickupDateTime).toLocaleDateString()}
                                         </td>
                                         <td className="px-6 py-5 text-secondary">
-                                            {new Date(trip.endDate).toLocaleDateString()}
+                                            {new Date(trip.returnDateTime).toLocaleDateString()}
                                         </td>
                                         <td className="px-6 py-5">
-                                            <span className={`px-3 py-1 rounded-full text-xs font-bold border shadow-sm ${STATUS_BADGES[trip.status] || "bg-surface text-muted"}`}>
-                                                {trip.status}
+                                            <span className={`px-3 py-1 rounded-full text-xs font-bold border shadow-sm ${STATUS_BADGES[trip.bookingStatus] || "bg-surface text-muted"}`}>
+                                                {trip.bookingStatus}
                                             </span>
                                         </td>
                                         <td className="px-6 py-5 font-bold text-secondary">

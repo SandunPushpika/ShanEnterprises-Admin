@@ -93,16 +93,6 @@ export default function LoginPage() {
               />
             </div>
 
-            {/* Remember + Forgot */}
-            <div className="flex items-center justify-between text-sm">
-              <button
-                type="button"
-                className="text-primary hover:text-primary-dark"
-              >
-                Forgot password?
-              </button>
-            </div>
-
             {/* Error Message */}
             {error && (
               <div className="w-full p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm">

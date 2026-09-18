@@ -193,25 +193,6 @@ function DriverDetailModal({ driver, onClose, onApprove, onReject, actionLoading
                         )}
                     </Section>
 
-                    {/* Performance */}
-                    <Section title="Performance">
-                        <div className="bg-surface rounded-2xl border border-border p-4 grid grid-cols-2 gap-y-3 gap-x-6 text-sm">
-                            {[
-                                ["Average Rating",   driver.average_rating != null ? `${Number(driver.average_rating).toFixed(1)} / 5.0` : "—"],
-                                ["Completed Rides",  driver.completed_rides ?? "—"],
-                                ["Availability",     formatAvailability(driver.availability)],
-                                ["Driver Status",    formatStatus(driver.driver_status)],
-                            ].map(([label, val]) => (
-                                <div key={label}>
-                                    <p className="text-[11px] font-bold text-muted uppercase tracking-wider">
-                                        {label}
-                                    </p>
-                                    <p className="font-semibold text-secondary mt-0.5">{val}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </Section>
-
                     {/* Approval */}
                     <Section title="Approval Info">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
