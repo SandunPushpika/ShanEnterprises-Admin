@@ -10,6 +10,7 @@ export const getVehicles = async ({
     minPassengers = 0,
     pageNumber = 1,
     pageSize = 10,
+    search = null,
 }) => {
     try {
         const response = await axiosInstance.post(
@@ -21,7 +22,8 @@ export const getVehicles = async ({
                 status,
                 minPassengers,
                 pageNumber,
-                pageSize
+                pageSize,
+                search
             }
         );
 

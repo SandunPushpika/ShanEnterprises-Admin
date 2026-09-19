@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Plus, CarFront } from "lucide-react";
 import Modal from "../components/common/Modal";
 import Toast from "../components/common/Toast";
@@ -21,6 +21,7 @@ export default function VehiclePage() {
     const [error, setError] = useState(null);
 
     const [searchQuery, setSearchQuery] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -29,35 +30,17 @@ export default function VehiclePage() {
 
     const [availabilityModal, setAvailabilityModal] = useState(false);
 
+    // Debounce search query changes and reset page to 1
     useEffect(() => {
-        loadVehicles();
-    }, [pageNumber]);
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchQuery);
+            setPageNumber(1);
+        }, 400);
 
-    const getStatusMatch = (statusVal, expectedLabel) => {
-        const label = getVehicleStatusLabel(statusVal).toUpperCase();
-        return label === expectedLabel.toUpperCase();
-    };
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
 
-    const available = vehicles.filter((v) => getStatusMatch(v.status, "Available")).length;
-    const rented = vehicles.filter((v) => getStatusMatch(v.status, "Booked")).length;
-    const maintenance = vehicles.filter((v) => getStatusMatch(v.status, "Maintenance")).length;
-    const unavailable = vehicles.filter((v) => getStatusMatch(v.status, "Unavailable")).length;
-
-    const filtered = vehicles.filter((v) => {
-        const q = searchQuery.toLowerCase().trim();
-        if (!q) return true;
-        return (
-            v.model.toLowerCase().includes(q) ||
-            v.brand.name.toLowerCase().includes(q) ||
-            v.type.name.toLowerCase().includes(q) ||
-            v.registrationNumber.toLowerCase().includes(q) ||
-            getVehicleStatusLabel(v.status).toLowerCase().includes(q) ||
-            String(v.fuel).toLowerCase().includes(q) ||
-            String(v.color).toLowerCase().includes(q)
-        );
-    });
-
-    const loadVehicles = async () => {
+    const loadVehicles = useCallback(async (search = debouncedSearch, page = pageNumber) => {
         try {
             setIsLoading(true);
             setError(null);
@@ -68,12 +51,13 @@ export default function VehiclePage() {
                 typeId: 0,
                 status: null,
                 minPassengers: 0,
-                pageNumber,
+                search: search?.trim() || null,
+                pageNumber: page,
                 pageSize,
             });
 
-            setVehicles(result.data);
-            setTotal(result.total);
+            setVehicles(result?.data || []);
+            setTotal(result?.total || 0);
         } catch (err) {
             const message =
                 err.response?.data?.message ||
@@ -85,7 +69,21 @@ export default function VehiclePage() {
         } finally {
             setIsLoading(false);
         }
+    }, [debouncedSearch, pageNumber, pageSize]);
+
+    useEffect(() => {
+        loadVehicles(debouncedSearch, pageNumber);
+    }, [debouncedSearch, pageNumber, loadVehicles]);
+
+    const getStatusMatch = (statusVal, expectedLabel) => {
+        const label = getVehicleStatusLabel(statusVal).toUpperCase();
+        return label === expectedLabel.toUpperCase();
     };
+
+    const available = vehicles.filter((v) => getStatusMatch(v.status, "Available")).length;
+    const rented = vehicles.filter((v) => getStatusMatch(v.status, "Booked")).length;
+    const maintenance = vehicles.filter((v) => getStatusMatch(v.status, "Maintenance")).length;
+    const unavailable = vehicles.filter((v) => getStatusMatch(v.status, "Unavailable")).length;
 
     const showToast = (message, type = "success") => {
         setToast({ message, type });
@@ -171,6 +169,12 @@ export default function VehiclePage() {
         setSelectedVehicle(null);
     };
 
+    const handleClearSearch = () => {
+        setSearchQuery("");
+        setDebouncedSearch("");
+        setPageNumber(1);
+    };
+
     return (
         <div className="p-4 md:p-8 min-h-[calc(100vh-80px)] space-y-8 bg-surface">
             {toast && <Toast type={toast.type} message={toast.message} />}
@@ -204,7 +208,7 @@ export default function VehiclePage() {
             <SearchBar
                 searchQuery={searchQuery}
                 setSearchQuery={setSearchQuery}
-                placeholder="Search by brand, model, registration number, status, fuel, color…"
+                placeholder="Search by brand, model, registration number…"
             />
 
             {isLoading ? (
@@ -213,16 +217,16 @@ export default function VehiclePage() {
                 <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-center">
                     <p className="text-red-600 font-medium">{error}</p>
                     <button
-                        onClick={loadVehicles}
+                        onClick={() => loadVehicles(debouncedSearch, pageNumber)}
                         className="mt-4 px-4 py-2 rounded-lg bg-primary text-white"
                     >
                         Retry
                     </button>
                 </div>
-            ) : filtered.length > 0 ? (
+            ) : vehicles.length > 0 ? (
                 <>
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                        {filtered.map((v) => (
+                        {vehicles.map((v) => (
                             <VehicleCard
                                 key={v.id}
                                 vehicle={v}
@@ -244,14 +248,19 @@ export default function VehiclePage() {
                     <CarFront className="w-16 h-16 text-muted/50 mx-auto stroke-[1.5]" />
                     <h3 className="text-xl font-bold text-secondary mt-5">No Vehicles Found</h3>
                     <p className="text-muted text-sm mt-2">
-                        No vehicles match &ldquo;{searchQuery}&rdquo;. Try a different keyword.
+                        {searchQuery
+                            ? <>No vehicles match &ldquo;{searchQuery}&rdquo;. Try a different keyword.</>
+                            : "No vehicles found in fleet."
+                        }
                     </p>
-                    <button
-                        onClick={() => setSearchQuery("")}
-                        className="mt-6 px-5 py-2.5 rounded-xl border border-border text-secondary hover:bg-slate-50 font-semibold transition"
-                    >
-                        Clear Search
-                    </button>
+                    {searchQuery && (
+                        <button
+                            onClick={handleClearSearch}
+                            className="mt-6 px-5 py-2.5 rounded-xl border border-border text-secondary hover:bg-slate-50 font-semibold transition"
+                        >
+                            Clear Search
+                        </button>
+                    )}
                 </div>
             )}
 
