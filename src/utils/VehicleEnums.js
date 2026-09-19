@@ -38,21 +38,21 @@ export const VEHICLE_STATUS_VALUES = {
 
 export const getTransmissionLabel = (value) => {
     const numValue = Number(value);
-    return TRANSMISSION_LABELS[numValue] || "Automatic";
+    return TRANSMISSION_LABELS[numValue] || value;
 };
 
 export const getFuelLabel = (value) => {
     const numValue = Number(value);
-    return FUEL_LABELS[numValue] || "Petrol";
+    return FUEL_LABELS[numValue] || value;
 };
 
 export const getTransmissionValue = (label) => {
-    const entry = Object.entries(TRANSMISSION_LABELS).find(([_, v]) => v === label);
+    const entry = Object.entries(TRANSMISSION_LABELS).find(([_, v]) => v.toLowerCase() === label.toLowerCase());
     return entry ? Number(entry[0]) : TRANSMISSION_TYPES.AUTOMATIC;
 };
 
 export const getFuelValue = (label) => {
-    const entry = Object.entries(FUEL_LABELS).find(([_, v]) => v === label);
+    const entry = Object.entries(FUEL_LABELS).find(([_, v]) => v.toLowerCase() === label.toLowerCase());
     return entry ? Number(entry[0]) : FUEL_TYPES.PETROL;
 };
 

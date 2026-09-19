@@ -5,6 +5,6 @@ export const getTransmissionType = (transmissionType) => {
         case 1:
             return "Manual";
         default:
-            return "Unknown";
+            return transmissionType;
     }
 }
