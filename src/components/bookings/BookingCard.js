@@ -86,7 +86,7 @@ function BookingCard({ booking, onView, onCancel, onComplete, onAssignDriver }) 
                             aria-label={`Complete booking ${booking.booking_reference}`}
                         >
                             <CheckCircle className="w-3.5 h-3.5" />
-                            Complete
+                            Done
                         </button>
                         <button
                             onClick={() => onCancel(booking)}
