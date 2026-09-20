@@ -56,11 +56,19 @@ export default function MaintenanceFormModal({
         loadVehicles();
     }, [vehicles]);
 
+    const handleStartDateChange = (e) => {
+        const val = e.target.value;
+        setMaintenanceStart(val);
+        if (maintenanceEnd && val && maintenanceEnd < val) {
+            setMaintenanceEnd(val);
+        }
+    };
+
     useEffect(() => {
         if (record) {
             setVehicleId(record.vehicleId);
-            setMaintenanceStart(record.maintenanceStart || "");
-            setMaintenanceEnd(record.maintenanceEnd || "");
+            setMaintenanceStart(record.maintenanceStart ? String(record.maintenanceStart).split("T")[0] : "");
+            setMaintenanceEnd(record.maintenanceEnd ? String(record.maintenanceEnd).split("T")[0] : "");
 
             setCost(record.cost);
             setStatus(STATUS_API_TO_UI[record.status] ?? record.status ?? "Under Maintenance");
@@ -84,8 +92,8 @@ export default function MaintenanceFormModal({
             setError("Please select a maintenance period (from and to dates).");
             return;
         }
-        if (new Date(maintenanceStart) > new Date(maintenanceEnd)) {
-            setError("The start date cannot be after the end date.");
+        if (maintenanceEnd < maintenanceStart) {
+            setError("The maintenance end date cannot be before the start date.");
             return;
         }
         if (!cost || Number(cost) <= 0) {
@@ -153,13 +161,16 @@ export default function MaintenanceFormModal({
                             <input
                                 type="date"
                                 value={maintenanceStart}
-                                onChange={(e) => setMaintenanceStart(e.target.value)}
+                                onChange={handleStartDateChange}
+                                aria-label="Maintenance start date"
                                 className="w-1/2 h-12 px-4 rounded-2xl border border-border focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none text-sm transition"
                             />
                             <input
                                 type="date"
                                 value={maintenanceEnd}
+                                min={maintenanceStart || undefined}
                                 onChange={(e) => setMaintenanceEnd(e.target.value)}
+                                aria-label="Maintenance end date"
                                 className="w-1/2 h-12 px-4 rounded-2xl border border-border focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none text-sm transition"
                             />
                         </div>
