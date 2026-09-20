@@ -208,7 +208,7 @@ export default function VehiclePage() {
             <SearchBar
                 searchQuery={searchQuery}
                 setSearchQuery={setSearchQuery}
-                placeholder="Search by brand, model, registration number…"
+                placeholder="Search by name, brand, model…"
             />
 
             {isLoading ? (
