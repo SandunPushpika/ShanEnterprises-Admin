@@ -10,17 +10,19 @@ const STATUS_ENUM_MAP = {
 };
 
 /**
- * Search/list drivers by status with pagination.
+ * Search/list drivers by status with pagination and search.
  * @param {Object} params
- * @param {string|number|null} params.status  - "PENDING"|"APPROVED"|"REJECTED"|"DEACTIVATED"|0|1|2|3|null
- * @param {number}             params.pageNumber
- * @param {number}             params.pageSize
+ * @param {string|null} params.status  - "PENDING"|"APPROVED"|"BLOCKED"|"ALL"|null
+ * @param {string|null} params.search  - Name, email, phone, or license search query
+ * @param {number}      params.pageNumber
+ * @param {number}      params.pageSize
  */
-export const searchDrivers = async ({ status = null, pageNumber = 1, pageSize = 20 } = {}) => {
+export const searchDrivers = async ({ status = null, search = null, pageNumber = 1, pageSize = 20 } = {}) => {
     try {
-        const payloadStatus = status != null ? (STATUS_ENUM_MAP[status] ?? status) : null;
         const response = await axiosInstance.post(`${driverEndpoint}/search`, {
-            status: payloadStatus,
+            statusFilter: status && status !== "ALL" ? status : null,
+            status: null,
+            search: search?.trim() || null,
             pageNumber,
             pageSize,
         });
@@ -35,6 +37,23 @@ export const searchDrivers = async ({ status = null, pageNumber = 1, pageSize = 
         throw error;
     }
 };
+
+/**
+ * Get aggregated driver statistics from the server.
+ */
+export const getDriverStats = async () => {
+    try {
+        const response = await axiosInstance.get(`${driverEndpoint}/stats`);
+        if (!response.data.success) {
+            throw new Error(response.data.message || "Failed to fetch driver stats");
+        }
+        return response.data.data;
+    } catch (error) {
+        console.error("DriverService.getDriverStats:", error);
+        throw error;
+    }
+};
+
 
 /**
  * Get a single driver by ID (admin only).

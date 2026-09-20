@@ -41,6 +41,21 @@ export const searchCustomers = async ({
     }
 };
 
+export const getCustomerStats = async () => {
+    try {
+        const response = await axiosInstance.get(`${userEndpoint}/customers/stats`);
+
+        if (!response.data.success) {
+            throw new Error(response.data.message || "Failed to fetch customer stats");
+        }
+
+        return response.data.data;
+    } catch (error) {
+        console.error("CustomerService.getCustomerStats:", error);
+        throw error;
+    }
+};
+
 
 export const updateCustomerStatus = async (userId, status) => {
     try {

@@ -5,6 +5,8 @@ const bookingEndpoint = "/api/Booking";
 export const getAllBookings = async ({
     pageNumber = 1,
     pageSize = 9,
+    status = null,
+    search = null,
 } = {}) => {
     try {
         const response = await axiosInstance.post(
@@ -12,6 +14,8 @@ export const getAllBookings = async ({
             {
                 pageNumber,
                 pageSize,
+                status: status && status !== "ALL" ? status : null,
+                search: search?.trim() || null,
             }
         );
 
@@ -25,6 +29,20 @@ export const getAllBookings = async ({
         throw error;
     }
 };
+
+export const getBookingStats = async () => {
+    try {
+        const response = await axiosInstance.get(`${bookingEndpoint}/stats`);
+        if (!response.data.success) {
+            throw new Error(response.data.message || "Failed to fetch booking stats");
+        }
+        return response.data.data;
+    } catch (error) {
+        console.error("BookingService.getBookingStats:", error);
+        throw error;
+    }
+};
+
 
 export const cancelBooking = async (bookingId) => {
     try {

@@ -5,11 +5,13 @@ import DriverList from "../components/Drivers/DriverList";
 import DriverDetailModal from "../components/Drivers/DriverDetailModal";
 import SearchBar from "../components/common/Searchbar";
 import Toast from "../components/common/Toast";
+import Pagination from "../components/common/Pagination";
 import { UserX, RefreshCw, Loader2 } from "lucide-react";
 import {
     searchDrivers,
     approveDriver,
     rejectDriver,
+    getDriverStats,
 } from "../services/DriverService";
 
 // Map backend DriverStatus (string or integer) → display status ("Approved", "Pending", "Blocked")
@@ -80,27 +82,57 @@ const PILL_ACTIVE = {
     BLOCKED:  "bg-rose-600    text-white border-rose-600",
 };
 
-// Map tab → backend status query param
-const TAB_TO_STATUS = {
-    ALL:      null,
-    APPROVED: "APPROVED",
-    PENDING:  "PENDING",
-    BLOCKED:  null, // handled client-side (both REJECTED + DEACTIVATED)
-};
-
 export default function DriversPage() {
     const navigate = useNavigate();
     const [drivers, setDrivers]         = useState([]);
+    const [totalCount, setTotalCount]   = useState(0);
+    const [pageNumber, setPageNumber]   = useState(1);
+    const [pageSize]                    = useState(10);
     const [loading, setLoading]         = useState(true);
     const [refreshing, setRefreshing]   = useState(false);
     const [error, setError]             = useState(null);
 
-    const [searchQuery, setSearchQuery] = useState("");
-    const [activeTab, setActiveTab]     = useState("ALL");
-    const [viewedDriver, setViewedDriver] = useState(null);
+    const [stats, setStats]             = useState({
+        total: 0,
+        pending: 0,
+        approved: 0,
+        blocked: 0,
+    });
+
+    const [searchQuery, setSearchQuery]         = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
+    const [activeTab, setActiveTab]             = useState("ALL");
+    const [viewedDriver, setViewedDriver]       = useState(null);
 
     const [toast, setToast]             = useState(null); // { type, message }
     const [actionLoading, setActionLoading] = useState({}); // { [driverId]: true }
+
+    // Debounce search query changes and reset page to 1
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchQuery);
+            setPageNumber(1);
+        }, 400);
+
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
+
+    // ── Load driver stats from API ──
+    const loadStats = useCallback(async () => {
+        try {
+            const data = await getDriverStats();
+            if (data) {
+                setStats({
+                    total: data.total ?? 0,
+                    pending: data.pending ?? 0,
+                    approved: data.approved ?? 0,
+                    blocked: data.blocked ?? 0,
+                });
+            }
+        } catch (err) {
+            console.error("Failed to load driver stats:", err);
+        }
+    }, []);
 
     // ── Load drivers from API ──
     const loadDrivers = useCallback(async (isRefresh = false) => {
@@ -109,15 +141,15 @@ export default function DriversPage() {
         setError(null);
 
         try {
-            // For BLOCKED tab we need both REJECTED + DEACTIVATED — fetch ALL then filter
-            const status = TAB_TO_STATUS[activeTab];
             const data = await searchDrivers({
-                status: activeTab === "BLOCKED" ? null : status,
-                pageNumber: 1,
-                pageSize: 100,
+                status: activeTab,
+                search: debouncedSearch,
+                pageNumber,
+                pageSize,
             });
             const mapped = (data?.data ?? []).map(toUiDriver);
             setDrivers(mapped);
+            setTotalCount(data?.total ?? 0);
         } catch (err) {
             console.error("Failed to load drivers:", err);
             setError("Failed to load drivers. Please try again.");
@@ -125,11 +157,20 @@ export default function DriversPage() {
             setLoading(false);
             setRefreshing(false);
         }
-    }, [activeTab]);
+    }, [activeTab, debouncedSearch, pageNumber, pageSize]);
 
     useEffect(() => {
         loadDrivers();
     }, [loadDrivers]);
+
+    useEffect(() => {
+        loadStats();
+    }, [loadStats]);
+
+    const handleTabChange = (tab) => {
+        setActiveTab(tab);
+        setPageNumber(1);
+    };
 
     const showToast = (type, message) => {
         setToast({ type, message });
@@ -144,11 +185,8 @@ export default function DriversPage() {
 
         if (result.success) {
             showToast("success", "Driver approved successfully.");
-            // Optimistic local update
-            setDrivers((prev) =>
-                prev.map((d) => (d.id === driverId ? { ...d, status: "Approved", driver_status: "APPROVED" } : d))
-            );
-            // Update modal if open
+            await loadDrivers();
+            await loadStats();
             if (viewedDriver?.id === driverId) {
                 setViewedDriver((prev) => ({ ...prev, status: "Approved", driver_status: "APPROVED" }));
             }
@@ -165,13 +203,8 @@ export default function DriversPage() {
 
         if (result.success) {
             showToast("success", "Driver rejected / deactivated successfully.");
-            setDrivers((prev) =>
-                prev.map((d) =>
-                    d.id === driverId
-                        ? { ...d, status: "Blocked", driver_status: d.driver_status === "PENDING" ? "REJECTED" : "DEACTIVATED" }
-                        : d
-                )
-            );
+            await loadDrivers();
+            await loadStats();
             if (viewedDriver?.id === driverId) {
                 setViewedDriver((prev) => ({
                     ...prev,
@@ -190,29 +223,6 @@ export default function DriversPage() {
         navigate(`/drivers/${driverId}/trips`);
     };
 
-    // ── Client-side filtering ──
-    const filteredDrivers = drivers.filter((driver) => {
-        let matchesTab = false;
-        if (activeTab === "ALL")      matchesTab = true;
-        else if (activeTab === "APPROVED") matchesTab = driver.status === "Approved";
-        else if (activeTab === "PENDING")  matchesTab = driver.status === "Pending";
-        else if (activeTab === "BLOCKED")  matchesTab = driver.status === "Blocked";
-
-        const q = searchQuery.toLowerCase().trim();
-        const matchesSearch =
-            !q ||
-            [driver.name, driver.license, driver.email].some((field) =>
-                field?.toLowerCase().includes(q)
-            );
-
-        return matchesTab && matchesSearch;
-    });
-
-    // ── Stats ──
-    const total        = drivers.length;
-    const pendingCount = drivers.filter((d) => d.status === "Pending").length;
-    const approvedCount = drivers.filter((d) => d.status === "Approved").length;
-    const blockedCount = drivers.filter((d) => d.status === "Blocked").length;
 
     return (
         <div className="p-4 md:p-8 min-h-[calc(100vh-80px)] space-y-8 bg-surface">
@@ -245,10 +255,10 @@ export default function DriversPage() {
 
             {/* Stats */}
             <DriverStats
-                total={total}
-                pending={pendingCount}
-                approved={approvedCount}
-                blocked={blockedCount}
+                total={stats.total}
+                pending={stats.pending}
+                approved={stats.approved}
+                blocked={stats.blocked}
             />
 
             {/* Search and Tabs */}
@@ -262,7 +272,7 @@ export default function DriversPage() {
                     {TABS.map((tab) => (
                         <button
                             key={tab}
-                            onClick={() => setActiveTab(tab)}
+                            onClick={() => handleTabChange(tab)}
                             className={`px-4 py-1.5 rounded-full border text-xs font-bold transition ${
                                 activeTab === tab
                                     ? PILL_ACTIVE[tab]
@@ -292,15 +302,23 @@ export default function DriversPage() {
                         Try Again
                     </button>
                 </div>
-            ) : filteredDrivers.length > 0 ? (
-                <DriverList
-                    drivers={filteredDrivers}
-                    onApprove={handleApprove}
-                    onReject={handleReject}
-                    onView={handleView}
-                    onViewTrips={handleViewTrips}
-                    actionLoading={actionLoading}
-                />
+            ) : drivers.length > 0 ? (
+                <>
+                    <DriverList
+                        drivers={drivers}
+                        onApprove={handleApprove}
+                        onReject={handleReject}
+                        onView={handleView}
+                        onViewTrips={handleViewTrips}
+                        actionLoading={actionLoading}
+                    />
+                    <Pagination
+                        currentPage={pageNumber}
+                        totalPages={Math.ceil(totalCount / pageSize)}
+                        onPageChange={setPageNumber}
+                        isLoading={loading}
+                    />
+                </>
             ) : (
                 <div className="bg-card border border-border rounded-3xl p-12 text-center shadow-card max-w-xl mx-auto mt-6">
                     <UserX className="w-16 h-16 text-muted/50 mx-auto stroke-[1.5]" />
@@ -310,16 +328,17 @@ export default function DriversPage() {
                             ? `No drivers match "${searchQuery}" in the ${TAB_LABELS[activeTab]} tab.`
                             : `No drivers in the ${TAB_LABELS[activeTab]} category.`}
                     </p>
-                    {searchQuery && (
+                    {(searchQuery || activeTab !== "ALL") && (
                         <button
-                            onClick={() => setSearchQuery("")}
+                            onClick={() => { setSearchQuery(""); setDebouncedSearch(""); setActiveTab("ALL"); setPageNumber(1); }}
                             className="mt-6 px-5 py-2.5 rounded-xl border border-border text-secondary hover:bg-slate-50 font-semibold transition"
                         >
-                            Clear Search
+                            Clear Filters
                         </button>
                     )}
                 </div>
             )}
+
 
             {/* Detail Modal */}
             {viewedDriver && (

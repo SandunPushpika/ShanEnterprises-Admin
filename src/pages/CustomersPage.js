@@ -3,8 +3,9 @@ import CustomerStats from "../components/Customer/CustomerStats";
 import CustomerTable from "../components/Customer/CustomerTable";
 import CustomerViewModal from "../components/Customer/CustomerViewModal";
 import SearchBar from "../components/common/Searchbar";
-import { UserX, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
-import { searchCustomers, updateCustomerStatus } from "../services/CustomerService";
+import Pagination from "../components/common/Pagination";
+import { UserX, Loader2 } from "lucide-react";
+import { searchCustomers, updateCustomerStatus, getCustomerStats } from "../services/CustomerService";
 
 const TABS = ["ALL", "ACTIVE", "INACTIVE"];
 const TAB_LABELS = {
@@ -27,9 +28,45 @@ function CustomersPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    const [stats, setStats] = useState({
+        total: 0,
+        active: 0,
+        inactive: 0,
+        verified: 0,
+    });
     const [selectedCustomer, setSelectedCustomer] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState("ALL");
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchTerm);
+            setPageNumber(1);
+        }, 400);
+
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
+
+    const loadStats = useCallback(async () => {
+        try {
+            const data = await getCustomerStats();
+            if (data) {
+                setStats({
+                    total: data.total ?? 0,
+                    active: data.active ?? 0,
+                    inactive: data.inactive ?? 0,
+                    verified: data.verified ?? 0,
+                });
+            }
+        } catch (err) {
+            console.error("Failed to load customer stats:", err);
+        }
+    }, []);
+
+    useEffect(() => {
+        loadStats();
+    }, [loadStats]);
 
     const fetchCustomers = useCallback(async () => {
         setIsLoading(true);
@@ -37,7 +74,7 @@ function CustomersPage() {
         try {
             const result = await searchCustomers({
                 status: statusFilter,
-                searchTerm,
+                searchTerm: debouncedSearch,
                 pageNumber,
                 pageSize: PAGE_SIZE,
             });
@@ -51,7 +88,7 @@ function CustomersPage() {
         } finally {
             setIsLoading(false);
         }
-    }, [statusFilter, searchTerm, pageNumber]);
+    }, [statusFilter, debouncedSearch, pageNumber]);
 
     useEffect(() => {
         fetchCustomers();
@@ -64,7 +101,6 @@ function CustomersPage() {
 
     const handleSearchChange = (term) => {
         setSearchTerm(term);
-        setPageNumber(1);
     };
 
     const handleActivate = async (id) => {
@@ -84,6 +120,7 @@ function CustomersPage() {
             if (selectedCustomer && selectedCustomer.id === id) {
                 setSelectedCustomer((prev) => ({ ...prev, status: "ACTIVE" }));
             }
+            loadStats();
         } catch (err) {
             alert("Failed to activate customer: " + (err.message || "Unknown error"));
         }
@@ -106,6 +143,7 @@ function CustomersPage() {
             if (selectedCustomer && selectedCustomer.id === id) {
                 setSelectedCustomer((prev) => ({ ...prev, status: "INACTIVE" }));
             }
+            loadStats();
         } catch (err) {
             alert("Failed to deactivate customer: " + (err.message || "Unknown error"));
         }
@@ -121,12 +159,12 @@ function CustomersPage() {
                         Customers
                     </h1>
                     <p className="text-muted text-sm mt-1">
-                        Manage customer accounts and profiles ({totalCount} total registered)
+                        Manage customer accounts and profiles ({stats.total || totalCount} total registered)
                     </p>
                 </div>
             </div>
 
-            <CustomerStats customers={customers} />
+            <CustomerStats stats={stats} />
 
             <div className="space-y-3">
                 <SearchBar
@@ -160,7 +198,10 @@ function CustomersPage() {
                 <div className="bg-rose-50 border border-rose-200 text-rose-700 p-6 rounded-3xl text-center">
                     <p className="font-semibold">{error}</p>
                     <button
-                        onClick={fetchCustomers}
+                        onClick={() => {
+                            fetchCustomers();
+                            loadStats();
+                        }}
                         className="mt-3 px-4 py-2 bg-rose-600 text-white text-xs font-bold rounded-xl hover:bg-rose-700 transition"
                     >
                         Try Again
@@ -175,49 +216,42 @@ function CustomersPage() {
                         onDeactivate={handleDeactivate}
                     />
 
-                    {totalPages > 1 && (
-                        <div className="flex items-center justify-between border-t border-border pt-4 px-2">
-                            <p className="text-xs text-muted font-medium">
-                                Showing Page {pageNumber} of {totalPages} ({totalCount} customers)
-                            </p>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={() => setPageNumber((p) => Math.max(p - 1, 1))}
-                                    disabled={pageNumber === 1}
-                                    className="p-2 rounded-xl border border-border bg-white text-secondary disabled:opacity-40 hover:bg-slate-50 transition"
-                                    aria-label="Previous Page"
-                                >
-                                    <ChevronLeft className="w-4 h-4" />
-                                </button>
-                                <span className="text-xs font-bold px-3 text-secondary">
-                                    {pageNumber} / {totalPages}
-                                </span>
-                                <button
-                                    onClick={() => setPageNumber((p) => Math.min(p + 1, totalPages))}
-                                    disabled={pageNumber === totalPages}
-                                    className="p-2 rounded-xl border border-border bg-white text-secondary disabled:opacity-40 hover:bg-slate-50 transition"
-                                    aria-label="Next Page"
-                                >
-                                    <ChevronRight className="w-4 h-4" />
-                                </button>
-                            </div>
-                        </div>
-                    )}
+                    <Pagination
+                        currentPage={pageNumber}
+                        totalPages={totalPages}
+                        onPageChange={setPageNumber}
+                        isLoading={isLoading}
+                    />
                 </>
             ) : (
                 <div className="bg-card border border-border rounded-3xl p-12 text-center shadow-card max-w-xl mx-auto mt-6">
                     <UserX className="w-16 h-16 text-muted/50 mx-auto stroke-[1.5]" />
                     <h3 className="text-xl font-bold text-secondary mt-5">No Customers Found</h3>
                     <p className="text-muted text-sm mt-2">
-                        No customers match &ldquo;{searchTerm}&rdquo; in the {TAB_LABELS[statusFilter]} tab.
+                        {searchTerm
+                            ? <>No customers match &ldquo;{searchTerm}&rdquo; in the {TAB_LABELS[statusFilter]} tab.</>
+                            : `No ${statusFilter === "ALL" ? "" : TAB_LABELS[statusFilter].toLowerCase() + " "}customers found.`
+                        }
                     </p>
-                    {searchTerm && (
-                        <button
-                            onClick={() => handleSearchChange("")}
-                            className="mt-6 px-5 py-2.5 rounded-xl border border-border text-secondary hover:bg-slate-50 font-semibold transition"
-                        >
-                            Clear Search
-                        </button>
+                    {(searchTerm || statusFilter !== "ALL") && (
+                        <div className="flex justify-center gap-3 mt-6">
+                            {searchTerm && (
+                                <button
+                                    onClick={() => handleSearchChange("")}
+                                    className="px-5 py-2.5 rounded-xl border border-border text-secondary hover:bg-slate-50 font-semibold transition"
+                                >
+                                    Clear Search
+                                </button>
+                            )}
+                            {statusFilter !== "ALL" && (
+                                <button
+                                    onClick={() => handleStatusChange("ALL")}
+                                    className="px-5 py-2.5 rounded-xl border border-border text-secondary hover:bg-slate-50 font-semibold transition"
+                                >
+                                    Show All Customers
+                                </button>
+                            )}
+                        </div>
                     )}
                 </div>
             )}

@@ -1,13 +1,13 @@
 import React from "react";
 import { Users, UserCheck, UserX, BadgeCheck } from "lucide-react";
 
-function CustomerStats({ customers }) {
-    const total = customers.length;
-    const active = customers.filter(c => c.status === "ACTIVE").length;
-    const inactive = customers.filter(c => c.status === "INACTIVE").length;
-    const verified = customers.filter(c => c.emailVerified).length;
+function CustomerStats({ stats, customers = [] }) {
+    const total = stats?.total ?? customers.length;
+    const active = stats?.active ?? customers.filter(c => c.status === "ACTIVE").length;
+    const inactive = stats?.inactive ?? customers.filter(c => c.status === "INACTIVE" || c.status === "SUSPENDED").length;
+    const verified = stats?.verified ?? customers.filter(c => c.emailVerified).length;
 
-    const stats = [
+    const statCards = [
         {
             title: "Total Customers",
             value: total,
@@ -40,7 +40,7 @@ function CustomerStats({ customers }) {
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            {stats.map((item, index) => (
+            {statCards.map((item, index) => (
                 <div
                     key={index}
                     className="bg-card rounded-3xl border border-border p-6 shadow-card hover:shadow-soft transition-all duration-300"

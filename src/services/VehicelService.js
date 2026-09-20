@@ -6,7 +6,7 @@ export const getVehicles = async ({
     minPrice = 0,
     maxPrice = 0,
     typeId = 0,
-    status = 0,
+    status = null,
     minPassengers = 0,
     pageNumber = 1,
     pageSize = 10,
@@ -19,7 +19,7 @@ export const getVehicles = async ({
                 minPrice,
                 maxPrice,
                 typeId,
-                status,
+                status: status && status !== "ALL" ? status : null,
                 minPassengers,
                 pageNumber,
                 pageSize,
@@ -34,6 +34,21 @@ export const getVehicles = async ({
         return response.data.data;
     } catch (error) {
         console.error("VehicleService.getVehicles:", error);
+        throw error;
+    }
+};
+
+export const getVehicleStats = async () => {
+    try {
+        const response = await axiosInstance.get(`${vehicleEndpoint}/stats`);
+
+        if (!response.data.success) {
+            throw new Error(response.data.message || "Failed to fetch vehicle stats");
+        }
+
+        return response.data.data;
+    } catch (error) {
+        console.error("VehicleService.getVehicleStats:", error);
         throw error;
     }
 };

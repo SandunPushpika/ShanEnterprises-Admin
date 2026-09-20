@@ -11,7 +11,7 @@ import BookingDetailModal from "../components/bookings/BookingDetailModal";
 import AssignDriverModal from "../components/bookings/AssignDriverModal";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import Pagination from "../components/common/Pagination";
-import { getAllBookings, cancelBooking, completeBooking, assignDriverToBooking } from "../services/BookingService";
+import { getAllBookings, cancelBooking, completeBooking, assignDriverToBooking, getBookingStats } from "../services/BookingService";
 
 const BLANK_FORM = {
     customer_name: "",
@@ -73,7 +73,16 @@ export default function BookingPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
 
+    const [stats, setStats] = useState({
+        total: 0,
+        confirmed: 0,
+        completed: 0,
+        pending: 0,
+        cancelled: 0,
+    });
+
     const [searchQuery, setSearchQuery] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState("ALL");
     const [isViewOpen, setIsViewOpen] = useState(false);
     const [isAddOpen, setIsAddOpen] = useState(false);
@@ -87,29 +96,44 @@ export default function BookingPage() {
     const [formErrors, setFormErrors] = useState({});
     const [toast, setToast] = useState(null);
 
-    const openAssignDriver = (booking) => {
-        setSelectedBooking(booking);
-        setIsAssignDriverOpen(true);
-    };
+    // Debounce search input
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchQuery);
+            setPageNumber(1);
+        }, 400);
 
-    const handleAssignDriverSave = async (bookingId, driverId) => {
-        const result = await assignDriverToBooking(bookingId, driverId);
-        if (result.success) {
-            showToast(result.message, "success");
-            setIsAssignDriverOpen(false);
-            setSelectedBooking(null);
-            loadBookings();
-        } else {
-            showToast(result.message, "error");
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
+
+    const loadStats = useCallback(async () => {
+        try {
+            const result = await getBookingStats();
+            if (result) {
+                setStats({
+                    total: result.total ?? 0,
+                    confirmed: result.confirmed ?? 0,
+                    completed: result.completed ?? 0,
+                    pending: result.pending ?? 0,
+                    cancelled: result.cancelled ?? 0,
+                });
+            }
+        } catch (err) {
+            console.error("Failed to load booking stats:", err);
         }
-    };
+    }, []);
 
     const loadBookings = useCallback(async () => {
         try {
             setIsLoading(true);
             setError(null);
 
-            const result = await getAllBookings({ pageNumber, pageSize });
+            const result = await getAllBookings({
+                pageNumber,
+                pageSize,
+                status: statusFilter === "ALL" ? null : statusFilter,
+                search: debouncedSearch,
+            });
 
             setBookings((result.data ?? []).map(mapBooking));
             setTotal(result.total ?? 0);
@@ -123,27 +147,39 @@ export default function BookingPage() {
         } finally {
             setIsLoading(false);
         }
-    }, [pageNumber, pageSize]);
+    }, [pageNumber, pageSize, statusFilter, debouncedSearch]);
 
     useEffect(() => {
         loadBookings();
     }, [loadBookings]);
 
-    const confirmed = bookings.filter((b) => b.booking_status === "CONFIRMED").length;
-    const completed = bookings.filter((b) => b.booking_status === "COMPLETED").length;
-    const pending = bookings.filter((b) => b.booking_status === "PENDING").length;
-    const cancelled = bookings.filter((b) => b.booking_status === "CANCELLED").length;
+    useEffect(() => {
+        loadStats();
+    }, [loadStats]);
 
-    const filtered = bookings.filter((b) => {
-        const q = searchQuery.toLowerCase().trim();
-        const matchQuery = !q || [
-            b.booking_reference, b.customer_name, b.vehicle_name,
-            b.driver_name, b.pickup_location, b.dropoff_location, b.booking_status,
-        ].some((v) => v?.toLowerCase().includes(q));
+    const handleStatusFilterChange = (status) => {
+        setStatusFilter(status);
+        setPageNumber(1);
+    };
 
-        const matchStatus = statusFilter === "ALL" || b.booking_status === statusFilter;
-        return matchQuery && matchStatus;
-    });
+    const openAssignDriver = (booking) => {
+        setSelectedBooking(booking);
+        setIsAssignDriverOpen(true);
+    };
+
+    const handleAssignDriverSave = async (bookingId, driverId) => {
+        const result = await assignDriverToBooking(bookingId, driverId);
+        if (result.success) {
+            showToast(result.message, "success");
+            setIsAssignDriverOpen(false);
+            setSelectedBooking(null);
+            loadBookings();
+            loadStats();
+        } else {
+            showToast(result.message, "error");
+        }
+    };
+
 
     const showToast = (message, type = "success") => {
         setToast({ message, type });
@@ -179,6 +215,7 @@ export default function BookingPage() {
         setIsAddOpen(false);
         showToast(`Booking ${formData.booking_reference} created!`);
         loadBookings();
+        loadStats();
     };
 
     const openEdit = (booking) => {
@@ -194,6 +231,7 @@ export default function BookingPage() {
         setIsEditOpen(false);
         showToast("Booking updated successfully!");
         loadBookings();
+        loadStats();
     };
 
     const openCancel = (booking) => {
@@ -210,6 +248,7 @@ export default function BookingPage() {
             setIsCancelOpen(false);
             setSelectedBooking(null);
             loadBookings();
+            loadStats();
         } catch (err) {
             const message = err.response?.data?.message || err.message || "Failed to cancel booking";
             showToast(message, "error");
@@ -232,6 +271,7 @@ export default function BookingPage() {
             setIsCompleteOpen(false);
             setSelectedBooking(null);
             loadBookings();
+            loadStats();
         } catch (err) {
             const message = err.response?.data?.message || err.message || "Failed to complete booking";
             showToast(message, "error");
@@ -265,11 +305,11 @@ export default function BookingPage() {
             </div>
 
             <BookingStatsBar
-                total={total}
-                confirmed={confirmed}
-                completed={completed}
-                pending={pending}
-                cancelled={cancelled}
+                total={stats.total}
+                confirmed={stats.confirmed}
+                completed={stats.completed}
+                pending={stats.pending}
+                cancelled={stats.cancelled}
             />
 
             <div className="space-y-3">
@@ -283,7 +323,7 @@ export default function BookingPage() {
                     {STATUS_PILLS.map((s) => (
                         <button
                             key={s}
-                            onClick={() => setStatusFilter(s)}
+                            onClick={() => handleStatusFilterChange(s)}
                             className={`px-4 py-1.5 rounded-full border text-xs font-bold transition ${statusFilter === s
                                     ? PILL_ACTIVE[s]
                                     : "bg-white border-border text-secondary hover:bg-slate-50"
@@ -307,10 +347,10 @@ export default function BookingPage() {
                         Retry
                     </button>
                 </div>
-            ) : filtered.length > 0 ? (
+            ) : bookings.length > 0 ? (
                 <>
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                        {filtered.map((b) => (
+                        {bookings.map((b) => (
                             <BookingCard
                                 key={b.id}
                                 booking={b}
@@ -338,13 +378,14 @@ export default function BookingPage() {
                             : "No bookings match the selected filter."}
                     </p>
                     <button
-                        onClick={() => { setSearchQuery(""); setStatusFilter("ALL"); }}
+                        onClick={() => { setSearchQuery(""); setDebouncedSearch(""); setStatusFilter("ALL"); setPageNumber(1); }}
                         className="mt-6 px-5 py-2.5 rounded-xl border border-border text-secondary hover:bg-slate-50 font-semibold transition"
                     >
                         Clear Filters
                     </button>
                 </div>
             )}
+
 
             {isViewOpen && (
                 <BookingDetailModal

@@ -9,8 +9,25 @@ import DeleteConfirmModal from "../components/common/DeleteConfirmModal";
 import VehicleStatsBar from "../components/vehicles/VehicleStatsBar";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import Pagination from "../components/common/Pagination";
-import { addVehicle, deleteVehicle, getVehicles, updateVehicle, setVehicleAvailability } from "../services/VehicelService";
-import { getVehicleStatusLabel } from "../utils/VehicleEnums";
+import { addVehicle, deleteVehicle, getVehicles, updateVehicle, setVehicleAvailability, getVehicleStats } from "../services/VehicelService";
+
+const STATUS_PILLS = ["ALL", "AVAILABLE", "BOOKED", "MAINTENANCE", "UNAVAILABLE"];
+
+const PILL_ACTIVE = {
+    ALL: "bg-secondary text-white border-secondary",
+    AVAILABLE: "bg-emerald-600 text-white border-emerald-600",
+    BOOKED: "bg-amber-600 text-white border-amber-600",
+    MAINTENANCE: "bg-rose-600 text-white border-rose-600",
+    UNAVAILABLE: "bg-slate-600 text-white border-slate-600",
+};
+
+const PILL_LABELS = {
+    ALL: "All",
+    AVAILABLE: "Available",
+    BOOKED: "Booked",
+    MAINTENANCE: "Maintenance",
+    UNAVAILABLE: "Unavailable",
+};
 
 export default function VehiclePage() {
     const [vehicles, setVehicles] = useState([]);
@@ -20,8 +37,16 @@ export default function VehiclePage() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
 
+    const [statusFilter, setStatusFilter] = useState("ALL");
     const [searchQuery, setSearchQuery] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
+    const [stats, setStats] = useState({
+        total: 0,
+        available: 0,
+        rented: 0,
+        maintenance: 0,
+        unavailable: 0,
+    });
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -40,7 +65,28 @@ export default function VehiclePage() {
         return () => clearTimeout(timer);
     }, [searchQuery]);
 
-    const loadVehicles = useCallback(async (search = debouncedSearch, page = pageNumber) => {
+    const loadStats = useCallback(async () => {
+        try {
+            const data = await getVehicleStats();
+            if (data) {
+                setStats({
+                    total: data.total ?? 0,
+                    available: data.available ?? 0,
+                    rented: data.rented ?? 0,
+                    maintenance: data.maintenance ?? 0,
+                    unavailable: data.unavailable ?? 0,
+                });
+            }
+        } catch (err) {
+            console.error("Failed to load vehicle stats:", err);
+        }
+    }, []);
+
+    useEffect(() => {
+        loadStats();
+    }, [loadStats]);
+
+    const loadVehicles = useCallback(async (search = debouncedSearch, page = pageNumber, status = statusFilter) => {
         try {
             setIsLoading(true);
             setError(null);
@@ -49,7 +95,7 @@ export default function VehiclePage() {
                 minPrice: 0,
                 maxPrice: 0,
                 typeId: 0,
-                status: null,
+                status: status === "ALL" ? null : status,
                 minPassengers: 0,
                 search: search?.trim() || null,
                 pageNumber: page,
@@ -69,21 +115,16 @@ export default function VehiclePage() {
         } finally {
             setIsLoading(false);
         }
-    }, [debouncedSearch, pageNumber, pageSize]);
+    }, [debouncedSearch, pageNumber, statusFilter, pageSize]);
 
     useEffect(() => {
-        loadVehicles(debouncedSearch, pageNumber);
-    }, [debouncedSearch, pageNumber, loadVehicles]);
+        loadVehicles(debouncedSearch, pageNumber, statusFilter);
+    }, [debouncedSearch, pageNumber, statusFilter, loadVehicles]);
 
-    const getStatusMatch = (statusVal, expectedLabel) => {
-        const label = getVehicleStatusLabel(statusVal).toUpperCase();
-        return label === expectedLabel.toUpperCase();
+    const handleStatusFilterChange = (status) => {
+        setStatusFilter(status);
+        setPageNumber(1);
     };
-
-    const available = vehicles.filter((v) => getStatusMatch(v.status, "Available")).length;
-    const rented = vehicles.filter((v) => getStatusMatch(v.status, "Booked")).length;
-    const maintenance = vehicles.filter((v) => getStatusMatch(v.status, "Maintenance")).length;
-    const unavailable = vehicles.filter((v) => getStatusMatch(v.status, "Unavailable")).length;
 
     const showToast = (message, type = "success") => {
         setToast({ message, type });
@@ -105,6 +146,7 @@ export default function VehiclePage() {
         }
         setIsAddOpen(false);
         await loadVehicles();
+        loadStats();
         showToast(`${newVehicle.model} registered successfully!`);
     };
 
@@ -125,6 +167,7 @@ export default function VehiclePage() {
 
         setIsEditOpen(false);
         await loadVehicles();
+        loadStats();
         showToast("Vehicle details updated!");
     };
 
@@ -146,6 +189,7 @@ export default function VehiclePage() {
         showToast(`${selectedVehicle.model} removed from fleet.`, "error");
 
         await loadVehicles();
+        loadStats();
         setSelectedVehicle(null);
     };
 
@@ -163,6 +207,7 @@ export default function VehiclePage() {
         if (result.success) {
             showToast(result.message);
             await loadVehicles();
+            loadStats();
         } else {
             showToast(result.message, "error");
         }
@@ -198,18 +243,36 @@ export default function VehiclePage() {
             </div>
 
             <VehicleStatsBar
-                total={total}
-                available={available}
-                rented={rented}
-                maintenance={maintenance}
-                unavailable={unavailable}
+                total={stats.total}
+                available={stats.available}
+                rented={stats.rented}
+                maintenance={stats.maintenance}
+                unavailable={stats.unavailable}
             />
 
-            <SearchBar
-                searchQuery={searchQuery}
-                setSearchQuery={setSearchQuery}
-                placeholder="Search by name, brand, model…"
-            />
+            <div className="space-y-3">
+                <SearchBar
+                    searchQuery={searchQuery}
+                    setSearchQuery={setSearchQuery}
+                    placeholder="Search by name, brand, model, registration…"
+                />
+
+                <div className="flex flex-wrap gap-2">
+                    {STATUS_PILLS.map((s) => (
+                        <button
+                            key={s}
+                            onClick={() => handleStatusFilterChange(s)}
+                            className={`px-4 py-1.5 rounded-full border text-xs font-bold transition ${
+                                statusFilter === s
+                                    ? PILL_ACTIVE[s]
+                                    : "bg-white border-border text-secondary hover:bg-slate-50"
+                            }`}
+                        >
+                            {PILL_LABELS[s]}
+                        </button>
+                    ))}
+                </div>
+            </div>
 
             {isLoading ? (
                 <LoadingSpinner />
@@ -217,7 +280,10 @@ export default function VehiclePage() {
                 <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-center">
                     <p className="text-red-600 font-medium">{error}</p>
                     <button
-                        onClick={() => loadVehicles(debouncedSearch, pageNumber)}
+                        onClick={() => {
+                            loadVehicles(debouncedSearch, pageNumber, statusFilter);
+                            loadStats();
+                        }}
                         className="mt-4 px-4 py-2 rounded-lg bg-primary text-white"
                     >
                         Retry
@@ -250,16 +316,30 @@ export default function VehiclePage() {
                     <p className="text-muted text-sm mt-2">
                         {searchQuery
                             ? <>No vehicles match &ldquo;{searchQuery}&rdquo;. Try a different keyword.</>
-                            : "No vehicles found in fleet."
+                            : statusFilter !== "ALL"
+                                ? `No vehicles found with status "${PILL_LABELS[statusFilter]}".`
+                                : "No vehicles found in fleet."
                         }
                     </p>
-                    {searchQuery && (
-                        <button
-                            onClick={handleClearSearch}
-                            className="mt-6 px-5 py-2.5 rounded-xl border border-border text-secondary hover:bg-slate-50 font-semibold transition"
-                        >
-                            Clear Search
-                        </button>
+                    {(searchQuery || statusFilter !== "ALL") && (
+                        <div className="flex justify-center gap-3 mt-6">
+                            {searchQuery && (
+                                <button
+                                    onClick={handleClearSearch}
+                                    className="px-5 py-2.5 rounded-xl border border-border text-secondary hover:bg-slate-50 font-semibold transition"
+                                >
+                                    Clear Search
+                                </button>
+                            )}
+                            {statusFilter !== "ALL" && (
+                                <button
+                                    onClick={() => handleStatusFilterChange("ALL")}
+                                    className="px-5 py-2.5 rounded-xl border border-border text-secondary hover:bg-slate-50 font-semibold transition"
+                                >
+                                    Show All Statuses
+                                </button>
+                            )}
+                        </div>
                     )}
                 </div>
             )}
