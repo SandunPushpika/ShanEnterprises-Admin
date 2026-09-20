@@ -262,13 +262,6 @@ export default function BookingPage() {
                         Create, track, and manage all rental bookings from one place.
                     </p>
                 </div>
-                <button
-                    onClick={openAdd}
-                    className="inline-flex items-center justify-center gap-2 h-12 px-6 rounded-2xl bg-cta-gradient text-white font-semibold shadow-glow hover:opacity-95 active:scale-[0.98] transition-all"
-                >
-                    <Plus className="w-5 h-5" />
-                    New Booking
-                </button>
             </div>
 
             <BookingStatsBar

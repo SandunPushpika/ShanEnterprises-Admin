@@ -52,7 +52,7 @@ function BookingCard({ booking, onView, onCancel, onComplete, onAssignDriver }) 
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                     <DollarSign className="w-4 h-4 shrink-0 text-primary/70" />
-                    <span className="font-bold text-secondary">${Number(booking.total_amount).toFixed(2)}</span>
+                    <span className="font-bold text-secondary">LKR{Number(booking.total_amount).toFixed(2)}</span>
                     {booking.rental_days && (
                         <span className="text-muted text-xs">· {booking.rental_days} day{booking.rental_days > 1 ? "s" : ""}</span>
                     )}
